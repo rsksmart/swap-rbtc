@@ -2,10 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "./IWrapped.sol";
+import "./ISwapRBTC.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract SwapRBTC is Initializable, OwnableUpgradeable {
+contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC {
   event WrappedBtcChanged(address newWrbtc);
   event RbtcSwapRbtc(address wrbtcContract, uint256 amountSwapped);
 
@@ -31,7 +32,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable {
     _setWrappedBTC(wrbtcContract);
   }
 
-  function swapWRBTCtoRBTC(uint256 amount) external returns (uint256) {
+  function swapWRBTCtoRBTC(uint256 amount) external override returns (uint256) {
     address payable sender = payable(msg.sender);
 
     wrbtc.transferFrom(sender, address(this), amount);

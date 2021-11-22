@@ -7,7 +7,7 @@
       "hash": "0x5dd19e78530283aadddb5bfdc54604c15da7157172edde1540dc92b017363f84",
       "type": 2,
       "accessList": [],
-      "blockHash": "0xa2aabcce2a07127d71b16578e8ee81ca37bddfb3106b49b5793ad415fb065f5c",
+      "blockHash": "0x961a0a5cbc3d24638fcb7d9b7d11fcab91bccaf642c76b54597b819739dde38a",
       "blockNumber": 3,
       "transactionIndex": 0,
       "confirmations": 1,
@@ -52,7 +52,7 @@
   "impls": {
     "aec276e771daaea9a654c7a09cc3b16775a3ec02839c6f4ba6db0e85ac4c5449": {
       "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      "txHash": "0x51dca7e36324c61e74c2b9d26960f29d95d396e8b91a43bdfa162f71e9c24933",
+      "txHash": "0x63ebc1416c79cfedcc9ef0a24241f2e0e462d53f4136ee228ea7022ef8cd2137",
       "layout": {
         "storage": [
           {
@@ -88,12 +88,12 @@
           {
             "contract": "SwapRBTC",
             "label": "wrbtc",
-            "type": "t_contract(IWrapped)262",
-            "src": "contracts/SwapRBTC.sol:12"
+            "type": "t_contract(IWrapped)272",
+            "src": "contracts/SwapRBTC.sol:13"
           }
         ],
         "types": {
-          "t_contract(IWrapped)262": {
+          "t_contract(IWrapped)272": {
             "label": "contract IWrapped"
           },
           "t_address": {
