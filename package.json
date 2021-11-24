@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.3.3",
-    "@openzeppelin/contracts-upgradeable": "^4.3.3"
+    "@openzeppelin/contracts-upgradeable": "^4.3.3",
+    "hardhat-erc1820": "^0.1.0"
   }
 }

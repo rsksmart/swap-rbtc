@@ -4,30 +4,41 @@ import { BigNumber, Contract } from "ethers";
 import { ethers, upgrades, network } from "hardhat";
 
 describe("Swap RBTC", function () {
-  let swapRBTC: Contract, wRBTC: Contract;
+  let swapRBTC: Contract, sideTokenBtc: Contract;
   const oneEther = ethers.utils.parseUnits("1.0", "ether");
   const halfEher = ethers.utils.parseUnits("0.5", "ether");
-  let deployer: SignerWithAddress;
+  let deployer: SignerWithAddress, minter: SignerWithAddress, sender: SignerWithAddress;
 
   beforeEach(async () => {
-    [deployer] = await ethers.getSigners();
+    [deployer, minter, sender] = await ethers.getSigners();
     const factorySwapRBTC = await ethers.getContractFactory("SwapRBTC");
-    const factoryWRBTC = await ethers.getContractFactory("WRBTC");
-    wRBTC = await factoryWRBTC.deploy();
+    const factorySideToken = await ethers.getContractFactory("SideToken");
 
-    swapRBTC = await upgrades.deployProxy(factorySwapRBTC, [wRBTC.address]);
+    sideTokenBtc = await factorySideToken.deploy(
+      "SideTokenBTC",
+      "sWBTC",
+      minter.address,
+      1
+    );
+
+    swapRBTC = await upgrades.deployProxy(factorySwapRBTC, [sideTokenBtc.address]);
   });
 
-  it("Should Swap the WRBTC to RBTC", async function () {
-    await wRBTC.deposit({from: deployer.address, value: oneEther});
-    const deployerBalance: BigNumber = await wRBTC.balanceOf(deployer.address);
+  it("Should Swap the side token BTC to RBTC", async function () {
+    await sideTokenBtc.connect(minter).mint(sender.address, oneEther, "0x", "0x");
+    const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
 
-    expect(deployerBalance.toString()).to.equals(oneEther.toString());
-    await wRBTC.approve(swapRBTC.address, halfEher);
+    expect(senderBalance.toString()).to.equals(oneEther.toString());
+    await sideTokenBtc.connect(sender).approve(swapRBTC.address, halfEher);
 
-    const balanceBeforeSwap = await deployer.getBalance();
-    const receipt = await swapRBTC.swapWRBTCtoRBTC(halfEher, {from: deployer.address});
-    const balanceAfterSwap = await deployer.getBalance();
+    await deployer.sendTransaction({
+      to: swapRBTC.address,
+      value: oneEther
+    });
+
+    const balanceBeforeSwap = await sender.getBalance();
+    const receipt = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEher);
+    const balanceAfterSwap = await sender.getBalance();
 
     const tx = await network.provider.send("eth_getTransactionReceipt", [receipt.hash]);
     const effectiveGasPrice = BigNumber.from(tx.effectiveGasPrice);

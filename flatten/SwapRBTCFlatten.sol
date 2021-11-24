@@ -1,64 +1,207 @@
 // Sources flattened with hardhat v2.6.8 https://hardhat.org
 
-// File contracts/IWrapped.sol
+// File contracts/ISideToken.sol
 
-// SPDX-License-Identifier: MIT
-
+//SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
 /**
- * @dev Interface of the ERC20 standard as defined in the EIP.
+ * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
+ * the optional functions; to access them see {ERC20Detailed}.
  */
-interface IWrapped {
+interface ISideToken {
   /**
-   * @dev Returns the amount of tokens in existence.
-   */
+    * @dev Returns the name of the token.
+  */
+  function name() external view returns (string memory);
+
+  /**
+    * @dev Returns the symbol of the token, usually a shorter version of the
+    * name.
+  */
+  function symbol() external view returns (string memory);
+
+  /**
+    * @dev Returns the smallest part of the token that is not divisible. This
+    * means all token operations (creation, movement and destruction) must have
+    * amounts that are a multiple of this number.
+    *
+    * For most token contracts, this value will equal 1.
+  */
+  function granularity() external view returns (uint256);
+
+  /**
+    * @dev Returns the amount of tokens in existence.
+    */
   function totalSupply() external view returns (uint256);
 
   /**
-   * @dev withdraw the amount in coin
-   */
-  function withdraw(uint wad) external;
+    * @dev Returns the amount of tokens owned by an account (`owner`).
+    */
+  function balanceOf(address owner) external view returns (uint256);
 
   /**
-   * @dev Moves `amount` tokens from the caller's account to `recipient`.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transfer(address recipient, uint256 amount) external returns (bool);
+    * @dev Moves `amount` tokens from the caller's account to `recipient`.
+    *
+    * If send or receive hooks are registered for the caller and `recipient`,
+    * the corresponding functions will be called with `data` and empty
+    * `operatorData`. See `IERC777Sender` and `IERC777Recipient`.
+    *
+    * Emits a `Sent` event.
+    *
+    * Requirements
+    *
+    * - the caller must have at least `amount` tokens.
+    * - `recipient` cannot be the zero address.
+    * - if `recipient` is a contract, it must implement the `tokensReceived`
+    * interface.
+    */
+  function send(address recipient, uint256 amount, bytes calldata data) external;
 
   /**
-   * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * IMPORTANT: Beware that changing an allowance with this method brings the risk
-   * that someone may use both the old and the new allowance by unfortunate
-   * transaction ordering. One possible solution to mitigate this race
-   * condition is to first reduce the spender's allowance to 0 and set the
-   * desired value afterwards:
-   * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-   *
-   * Emits an {Approval} event.
-   */
-  function approve(address spender, uint256 amount) external returns (bool);
+    * @dev Destroys `amount` tokens from the caller's account, reducing the
+    * total supply.
+    *
+    * If a send hook is registered for the caller, the corresponding function
+    * will be called with `data` and empty `operatorData`. See `IERC777Sender`.
+    *
+    * Emits a `Burned` event.
+    *
+    * Requirements
+    *
+    * - the caller must have at least `amount` tokens.
+  */
+  function burn(uint256 amount, bytes calldata data) external;
 
   /**
-   * @dev Moves `amount` tokens from `sender` to `recipient` using the
-   * allowance mechanism. `amount` is then deducted from the caller's
-   * allowance.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transferFrom(
+    * @dev Returns true if an account is an operator of `tokenHolder`.
+    * Operators can send and burn tokens on behalf of their owners. All
+    * accounts are their own operator.
+    *
+    * See `operatorSend` and `operatorBurn`.
+  */
+  function isOperatorFor(address operator, address tokenHolder) external view returns (bool);
+
+  /**
+    * @dev Make an account an operator of the caller.
+    *
+    * See `isOperatorFor`.
+    *
+    * Emits an `AuthorizedOperator` event.
+    *
+    * Requirements
+    *
+    * - `operator` cannot be calling address.
+  */
+  function authorizeOperator(address operator) external;
+
+  /**
+    * @dev Make an account an operator of the caller.
+    *
+    * See `isOperatorFor` and `defaultOperators`.
+    *
+    * Emits a `RevokedOperator` event.
+    *
+    * Requirements
+    *
+    * - `operator` cannot be calling address.
+  */
+  function revokeOperator(address operator) external;
+
+  /**
+    * @dev Returns the list of default operators. These accounts are operators
+    * for all token holders, even if `authorizeOperator` was never called on
+    * them.
+    *
+    * This list is immutable, but individual holders may revoke these via
+    * `revokeOperator`, in which case `isOperatorFor` will return false.
+  */
+  function defaultOperators() external view returns (address[] memory);
+
+  /**
+    * @dev Moves `amount` tokens from `sender` to `recipient`. The caller must
+    * be an operator of `sender`.
+    *
+    * If send or receive hooks are registered for `sender` and `recipient`,
+    * the corresponding functions will be called with `data` and
+    * `operatorData`. See `IERC777Sender` and `IERC777Recipient`.
+    *
+    * Emits a `Sent` event.
+    *
+    * Requirements
+    *
+    * - `sender` cannot be the zero address.
+    * - `sender` must have at least `amount` tokens.
+    * - the caller must be an operator for `sender`.
+    * - `recipient` cannot be the zero address.
+    * - if `recipient` is a contract, it must implement the `tokensReceived`
+    * interface.
+  */
+  function operatorSend(
     address sender,
     address recipient,
-    uint256 amount
-  ) external returns (bool);
+    uint256 amount,
+    bytes calldata data,
+    bytes calldata operatorData
+  ) external;
+
+  /**
+    * @dev Destoys `amount` tokens from `account`, reducing the total supply.
+    * The caller must be an operator of `account`.
+    *
+    * If a send hook is registered for `account`, the corresponding function
+    * will be called with `data` and `operatorData`. See `IERC777Sender`.
+    *
+    * Emits a `Burned` event.
+    *
+    * Requirements
+    *
+    * - `account` cannot be the zero address.
+    * - `account` must have at least `amount` tokens.
+    * - the caller must be an operator for `account`.
+  */
+  function operatorBurn(
+    address account,
+    uint256 amount,
+    bytes calldata data,
+    bytes calldata operatorData
+  ) external;
+
+  event Sent(
+    address indexed operator,
+    address indexed from,
+    address indexed to,
+    uint256 amount,
+    bytes data,
+    bytes operatorData
+  );
+
+  function decimals() external returns (uint8);
+
+  event Minted(address indexed operator, address indexed to, uint256 amount, bytes data, bytes operatorData);
+
+  event Burned(address indexed operator, address indexed from, uint256 amount, bytes data, bytes operatorData);
+
+  event AuthorizedOperator(address indexed operator, address indexed tokenHolder);
+
+  event RevokedOperator(address indexed operator, address indexed tokenHolder);
+
+  // ERC20 METHODS
+
+  /**
+    * @dev Moves `amount` tokens from `sender` to `recipient` using the
+    * allowance mechanism. `amount` is then deducted from the caller's
+    * allowance.
+    *
+    * Returns a boolean value indicating whether the operation succeeded.
+    *
+    * Emits a {Transfer} event.
+  */
+  function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+  // ISideToken METHODS
+
+  function mint(address account, uint256 amount, bytes calldata userData, bytes calldata operatorData) external;
 }
 
 
@@ -240,49 +383,54 @@ abstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {
 
 // File contracts/SwapRBTC.sol
 
-//SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
 
-
-
 contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC {
-  event WrappedBtcChanged(address newWrbtc);
-  event RbtcSwapRbtc(address wrbtcContract, uint256 amountSwapped);
+  event WrappedBtcChanged(address sideTokenBtc);
+  event RbtcSwapRbtc(address sideTokenBtc, uint256 amountSwapped);
+  event Withdrawal(address indexed src, uint256 wad, address sideTokenBtc);
 
-  IWrapped public wrbtc;
+  ISideToken public sideTokenBtc; // sideEthereumBTC
   address internal constant NULL_ADDRESS = address(0);
 
-  function initialize(address wrbtcContract) public initializer {
-    _setWrappedBTC(wrbtcContract);
+  function initialize(address sideTokenBtcContract) public initializer {
+    _setSideTokenBtc(sideTokenBtcContract);
+    // ERC1820.setInterfaceImplementer(address(this), 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b, address(this));
   }
 
   receive () external payable {
 		// The fallback function is needed to use WRBTC
-		require(_msgSender() == address(wrbtc), "SwapRBTC: not wrapped BTC");
+		require(_msgSender() == address(sideTokenBtc), "SwapRBTC: not sideBTC address");
 	}
 
-  function _setWrappedBTC(address wrbtcContract) internal {
-    require(wrbtcContract != NULL_ADDRESS, "SwapRBTC: wrbtc contract is null");
-    wrbtc = IWrapped(wrbtcContract);
-    emit WrappedBtcChanged(wrbtcContract);
+  function _setSideTokenBtc(address sideTokenBtcContract) internal {
+    require(sideTokenBtcContract != NULL_ADDRESS, "SwapRBTC: sideBTC is null");
+    sideTokenBtc = ISideToken(sideTokenBtcContract);
+    emit WrappedBtcChanged(sideTokenBtcContract);
   }
 
-  function setWrappedBTC(address wrbtcContract) public onlyOwner {
-    _setWrappedBTC(wrbtcContract);
+  function setWrappedBtc(address sideTokenBtcContract) public onlyOwner {
+    _setSideTokenBtc(sideTokenBtcContract);
   }
 
   function swapWRBTCtoRBTC(uint256 amount) external override returns (uint256) {
     address payable sender = payable(msg.sender);
+    require(sideTokenBtc.balanceOf(sender) >= amount, "SwapRBTC: not enough balance");
 
-    wrbtc.transferFrom(sender, address(this), amount);
-    wrbtc.withdraw(amount);
+    bool successTransfer = sideTokenBtc.transferFrom(sender, address(this), amount);
+    emit Withdrawal(sender, amount, address(sideTokenBtc));
+
+    require(successTransfer, "SwapRBTC: Transfer sender failed");
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
 
+    sideTokenBtc.burn(amount, "");
+
     // solhint-disable-next-line avoid-low-level-calls
-    (bool success,) = sender.call{value: amount}("");
-    require(success, "SwapRBTC: Swap call failed");
-    emit RbtcSwapRbtc(address(wrbtc), amount);
+    (bool successCall,) = sender.call{value: amount}("");
+    require(successCall, "SwapRBTC: Swap call failed");
+    emit RbtcSwapRbtc(address(sideTokenBtc), amount);
+
     return amount;
   }
 

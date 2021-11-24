@@ -5,6 +5,7 @@ import 'hardhat-deploy';
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-ethers";
+import "hardhat-erc1820";
 
 import "@openzeppelin/hardhat-upgrades";
 
