@@ -68,6 +68,10 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     return amount;
   }
 
+  function getSideTokenBtc() external view override returns (address) {
+    return address(sideTokenBtc);
+  }
+
   /**
     * @dev Called by an `IERC777` token contract whenever tokens are being
     * moved or created into a registered account (`to`). The type of operation
