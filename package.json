@@ -5,7 +5,9 @@
   "main": "index.ts",
   "scripts": {
     "test": "npx hardhat test",
-    "compile": "npx hardhat compile"
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat deploy --show-stack-traces --network --",
+    "deploy:test": "npx hardhat deploy --show-stack-traces --deploy-fixture --network --"
   },
   "repository": {
     "type": "git",
