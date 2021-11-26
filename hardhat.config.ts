@@ -101,7 +101,6 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
-    tokenOwner: 1,
     multiSig: getMultiSigAddressesByChainId(),
     proxyAdmin: getProxyAdminAddressesByChainId(),
     bridgeProxy: getBridgeProxyAddressesByChainId(),
