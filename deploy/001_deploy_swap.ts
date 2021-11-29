@@ -16,8 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const sideWrappedBtcAddress = await getSideWrappedBtcAddress(hre);
 
   const factorySwapRBTC = await ethers.getContractFactory(
-    "SwapRBTC",
-    proxyAdminAddress
+    "SwapRBTC"
   );
 
   const deploySwap: DeployResult = await deploy('SwapRBTC', {
