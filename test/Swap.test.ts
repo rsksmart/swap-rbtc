@@ -37,7 +37,7 @@ describe("Swap RBTC", function () {
     });
 
     const balanceBeforeSwap = await sender.getBalance();
-    const receipt = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEher);
+    const receipt = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEher, sideTokenBtc.address);
     const balanceAfterSwap = await sender.getBalance();
 
     const tx = await network.provider.send("eth_getTransactionReceipt", [receipt.hash]);
