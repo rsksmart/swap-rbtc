@@ -5,13 +5,20 @@ import "./ISideToken.sol";
 import "./ISwapRBTC.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 
 contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipient {
-  event WrappedBtcChanged(address sideTokenBtc);
+  using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+  using SafeERC20Upgradeable for ISideToken;
+
+  event sideTokenBtcAdded(address sideTokenBtc);
+  event sideTokenBtcRemoved(address sideTokenBtc);
   event RbtcSwapRbtc(address sideTokenBtc, uint256 amountSwapped);
-  event Withdrawal(address indexed src, uint256 wad, address sideTokenBtc);
+  event WithdrawalRBTC(address indexed src, uint256 wad);
+  event WithdrawalWRBTC(address indexed src, uint256 wad);
   event Received(address sender, uint256 amount);
   event TokenReceived(
     address operator,
@@ -23,53 +30,101 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   );
 
   IERC1820Registry constant internal ERC1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
-  ISideToken public sideTokenBtc; // sideEthereumBTC
+  EnumerableSetUpgradeable.AddressSet internal enumerableSideTokenBtc;
+
+  // ISideToken sideTokenBtc; // sideEthereumBTC
   address internal constant NULL_ADDRESS = address(0);
+  uint256 public fee;
+
+  mapping(address => uint256) public balance;
 
   function initialize(address sideTokenBtcContract) public initializer {
-    _setSideTokenBtc(sideTokenBtcContract);
+    // _setSideTokenBtc(sideTokenBtcContract);
+    _addSideTokenBtc(sideTokenBtcContract);
     // keccak256("ERC777TokensRecipient")
+    fee = 0;
     ERC1820.setInterfaceImplementer(address(this), 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b, address(this));
   }
 
-  receive () external payable {
-		// The fallback function is needed to use WRBTC
-		// require(_msgSender() == address(sideTokenBtc), "SwapRBTC: not sideBTC address");
+  receive() external payable {
+		// The fallback function is needed to receive WRBTC
+    balance[msg.sender] += msg.value;
     emit Received(msg.sender, msg.value);
 	}
 
-  function _setSideTokenBtc(address sideTokenBtcContract) internal {
+  function withdrawalRBTC(uint256 amount) external {
+    require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
+    require(address(this).balance >= amount, "SwapRBTC: amount > balance");
+    balance[msg.sender] -= amount;
+
+    // solhint-disable-next-line avoid-low-level-calls
+    (bool successCall,) = payable(msg.sender).call{value: amount}("");
+    require(successCall, "SwapRBTC: withdrawalRBTC failed");
+
+    emit WithdrawalRBTC(msg.sender, amount);
+  }
+
+  function withdrawalWRBTC(uint256 amount, address sideTokenBtcContract) external {
+    require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
+    require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
+
+    ISideToken sideTokenBtc = ISideToken(sideTokenBtcContract);
+    require(sideTokenBtc.balanceOf(address(this)) >= amount, "SwapRBTC: amount > balance");
+    balance[msg.sender] -= amount;
+    bool successCall = sideTokenBtc.transferFrom(address(this), msg.sender, amount);
+    require(successCall, "SwapRBTC: withdrawalWRBTC failed");
+    emit WithdrawalWRBTC(msg.sender, amount);
+  }
+
+  function _addSideTokenBtc(address sideTokenBtcContract) internal {
     require(sideTokenBtcContract != NULL_ADDRESS, "SwapRBTC: sideBTC is null");
-    sideTokenBtc = ISideToken(sideTokenBtcContract);
-    emit WrappedBtcChanged(sideTokenBtcContract);
+    enumerableSideTokenBtc.add(sideTokenBtcContract);
+    emit sideTokenBtcAdded(sideTokenBtcContract);
   }
 
-  function setWrappedBtc(address sideTokenBtcContract) public onlyOwner {
-    _setSideTokenBtc(sideTokenBtcContract);
+  function addSideTokenBtc(address sideTokenBtcContract) public onlyOwner {
+    _addSideTokenBtc(sideTokenBtcContract);
   }
 
-  function swapWRBTCtoRBTC(uint256 amount) external override returns (uint256) {
+  function _removeSideTokenBtc(address sideTokenBtcContract) internal {
+    require(sideTokenBtcContract != NULL_ADDRESS, "SwapRBTC: sideBTC is null");
+    enumerableSideTokenBtc.remove(sideTokenBtcContract);
+    emit sideTokenBtcRemoved(sideTokenBtcContract);
+  }
+
+  function removeSideTokenBtc(address sideTokenBtcContract) public onlyOwner {
+    _removeSideTokenBtc(sideTokenBtcContract);
+  }
+
+  function lengthSideTokenBtc() public returns(uint256) {
+    return enumerableSideTokenBtc.length();
+  }
+
+  function containsSideTokenBtc(address sideTokenBtcContract) public returns(bool) {
+    return enumerableSideTokenBtc.contains(sideTokenBtcContract);
+  }
+
+  function sideTokenBtcAt(uint256 index) public returns(address) {
+    return enumerableSideTokenBtc.at(index);
+  }
+
+  function swapWRBTCtoRBTC(uint256 amount, address sideTokenBtcContract) external override returns (uint256) {
+    require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
+    ISideToken sideTokenBtc = ISideToken(sideTokenBtcContract);
+
     address payable sender = payable(msg.sender);
     require(sideTokenBtc.balanceOf(sender) >= amount, "SwapRBTC: not enough balance");
 
     bool successTransfer = sideTokenBtc.transferFrom(sender, address(this), amount);
-    emit Withdrawal(sender, amount, address(sideTokenBtc));
 
     require(successTransfer, "SwapRBTC: Transfer sender failed");
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
-
-    sideTokenBtc.burn(amount, "");
 
     // solhint-disable-next-line avoid-low-level-calls
     (bool successCall,) = sender.call{value: amount}("");
     require(successCall, "SwapRBTC: Swap call failed");
     emit RbtcSwapRbtc(address(sideTokenBtc), amount);
-
     return amount;
-  }
-
-  function getSideTokenBtc() external view override returns (address) {
-    return address(sideTokenBtc);
   }
 
   /**
