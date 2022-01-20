@@ -96,15 +96,15 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     _removeSideTokenBtc(sideTokenBtcContract);
   }
 
-  function lengthSideTokenBtc() public returns(uint256) {
+  function lengthSideTokenBtc() public view returns(uint256) {
     return enumerableSideTokenBtc.length();
   }
 
-  function containsSideTokenBtc(address sideTokenBtcContract) public returns(bool) {
+  function containsSideTokenBtc(address sideTokenBtcContract) public view returns(bool) {
     return enumerableSideTokenBtc.contains(sideTokenBtcContract);
   }
 
-  function sideTokenBtcAt(uint256 index) public returns(address) {
+  function sideTokenBtcAt(uint256 index) public view returns(address) {
     return enumerableSideTokenBtc.at(index);
   }
 
