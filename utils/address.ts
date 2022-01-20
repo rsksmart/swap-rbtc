@@ -20,8 +20,8 @@ export async function getProxyAdminAddress(hre: HardhatRuntimeEnvironment) {
 
 export async function getSideWrappedBtcAddress(hre: HardhatRuntimeEnvironment) {
   const { deployments } = hre;
-  const { sideWtbtc } = await getNamedAccountsInstance(hre);
-  return sideWtbtc ?? (await deployments.get("WTBTC")).address;
+  const { sideToken } = await getNamedAccountsInstance(hre);
+  return sideToken ?? (await deployments.get("SideToken")).address;
 }
 
 export async function getMultiSigAddress(hre: HardhatRuntimeEnvironment) {
