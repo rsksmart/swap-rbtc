@@ -20,4 +20,4 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) { // HardhatRun
 };
 
 module.exports.id = 'deploy_proxyAdmin'; // id required to prevent reexecution
-module.exports.tags = ['ProxyAdmin', 'IntegrationTest'];
+module.exports.tags = ['ProxyAdmin'];

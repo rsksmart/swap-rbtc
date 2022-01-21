@@ -31,7 +31,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 const config: HardhatUserConfig = {
-  solidity: "0.8.2",
+  solidity: "0.8.9",
   networks: {
     hardhat: {
       live: false,
@@ -62,7 +62,6 @@ const config: HardhatUserConfig = {
     minter: 1,
     multiSig: getMultiSigAddressesByChainId(),
     proxyAdmin: getProxyAdminAddressesByChainId(),
-    bridgeProxy: getBridgeProxyAddressesByChainId(),
     sideToken: getSideWbtcAddressesByChainId(),
   },
   gasReporter: {
@@ -92,15 +91,6 @@ function getProxyAdminAddressesByChainId() {
   proxyAdminAddressesByChainId[RSK_MAIN_NET_CHAIN_ID] = '0x12ed69359919fc775bc2674860e8fe2d2b6a7b5d';
   proxyAdminAddressesByChainId[RSK_TEST_NET_CHAIN_ID] = '0x8c35e166d2dea7a8a28aaea11ad7933cdae4b0ab';
   return proxyAdminAddressesByChainId;
-}
-
-function getBridgeProxyAddressesByChainId() {
-  const bridgeProxyAddressesByChainId: {
-    [index: number]: string
-  } = {};
-  bridgeProxyAddressesByChainId[RSK_MAIN_NET_CHAIN_ID] = '0x9d11937e2179dc5270aa86a3f8143232d6da0e69';
-  bridgeProxyAddressesByChainId[RSK_TEST_NET_CHAIN_ID] = '0x684a8a976635fb7ad74a0134ace990a6a0fcce84';
-  return bridgeProxyAddressesByChainId;
 }
 
 function getSideWbtcAddressesByChainId() {

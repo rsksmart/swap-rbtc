@@ -45,14 +45,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (deployProxyResult.newlyDeployed) {
     log(`Contract ${SwapRbtcProxy} deployed at ${deployProxyResult.address} using ${deployProxyResult.receipt?.gasUsed.toString()} gas`);
-
-    if(network.live && !isRSK(network)) {
-      log(`Startig Verification of ${deploySwap.address}`);
-      await hre.run("verify:verify", {
-        address: deploySwap.address,
-        constructorArguments: constructorArguments,
-      });
-    }
   }
 };
 export default func;

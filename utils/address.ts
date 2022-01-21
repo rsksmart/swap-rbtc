@@ -30,35 +30,6 @@ export async function getMultiSigAddress(hre: HardhatRuntimeEnvironment) {
   return multiSig ?? (await deployments.get("MultiSigWallet")).address;
 }
 
-export async function getBridgeProxyAddress(hre: HardhatRuntimeEnvironment) {
-  const { deployments } = hre;
-  const { bridgeProxy } = await getNamedAccountsInstance(hre);
-  if (bridgeProxy) {
-    return bridgeProxy;
-  }
-  const bridgeProxyDeployment = await deployments.getOrNull("BridgeProxy");
-  if (bridgeProxyDeployment) {
-    return bridgeProxyDeployment.address;
-  }
-  return bridgeProxyDeployment;
-}
-
-export async function getNftBridgeProxyAddress(hre: HardhatRuntimeEnvironment) {
-  const { deployments } = hre;
-  const { nftBridgeProxy } = await getNamedAccountsInstance(hre);
-
-  if (nftBridgeProxy) {
-    return nftBridgeProxy;
-  }
-  const nftBridgeProxyDeployment = await deployments.getOrNull(
-    "NftBridgeProxy"
-  );
-  if (nftBridgeProxyDeployment) {
-    return nftBridgeProxyDeployment.address;
-  }
-  return nftBridgeProxyDeployment;
-}
-
 export async function getFederatorProxyAddress(hre: HardhatRuntimeEnvironment) {
   const { deployments } = hre;
   const { federatorProxy } = await getNamedAccountsInstance(hre);
