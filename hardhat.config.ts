@@ -59,7 +59,6 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
-    minter: 1,
     multiSig: getMultiSigAddressesByChainId(),
     proxyAdmin: getProxyAdminAddressesByChainId(),
     sideToken: getSideWbtcAddressesByChainId(),

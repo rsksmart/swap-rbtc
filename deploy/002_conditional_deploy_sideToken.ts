@@ -24,7 +24,7 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) { // HardhatRun
       args: [
         "SideTokenBTC",
         "sWBTC",
-        minter,
+        deployer,
         1],
       log: true
     });
