@@ -35,15 +35,6 @@ const MNEMONIC = process.env.MNEMONIC ?? 'test test test test test test test tes
 const config: HardhatUserConfig = {
   solidity: "0.8.9",
   networks: {
-    hardhat: {
-      live: false,
-      blockGasLimit: 6800000,
-      chainId: HARDHAT_TEST_NET_CHAIN_ID,
-      gasPrice: 60000000,
-      hardfork: 'istanbul', // London hardfork is incompatible with RSK gasPrice
-
-      tags: ['test', 'local'],
-    },
     // RSK
     rsktestnet: {
       live: true,
