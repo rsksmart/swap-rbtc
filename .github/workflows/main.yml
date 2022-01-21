@@ -23,9 +23,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Solhint
-        run: npm run lint
-
       - name: Tests
         run: npm run test
 
@@ -34,5 +31,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install dependencies
+        run: npm ci
+
       - name: Deploy contracts
         run: npm run deploy hardhat        
