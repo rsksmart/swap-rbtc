@@ -20,43 +20,14 @@ export async function getProxyAdminAddress(hre: HardhatRuntimeEnvironment) {
 
 export async function getSideWrappedBtcAddress(hre: HardhatRuntimeEnvironment) {
   const { deployments } = hre;
-  const { sideWtbtc } = await getNamedAccountsInstance(hre);
-  return sideWtbtc ?? (await deployments.get("WTBTC")).address;
+  const { sideToken } = await getNamedAccountsInstance(hre);
+  return sideToken ?? (await deployments.get("SideToken")).address;
 }
 
 export async function getMultiSigAddress(hre: HardhatRuntimeEnvironment) {
   const { deployments } = hre;
   const { multiSig } = await getNamedAccountsInstance(hre);
   return multiSig ?? (await deployments.get("MultiSigWallet")).address;
-}
-
-export async function getBridgeProxyAddress(hre: HardhatRuntimeEnvironment) {
-  const { deployments } = hre;
-  const { bridgeProxy } = await getNamedAccountsInstance(hre);
-  if (bridgeProxy) {
-    return bridgeProxy;
-  }
-  const bridgeProxyDeployment = await deployments.getOrNull("BridgeProxy");
-  if (bridgeProxyDeployment) {
-    return bridgeProxyDeployment.address;
-  }
-  return bridgeProxyDeployment;
-}
-
-export async function getNftBridgeProxyAddress(hre: HardhatRuntimeEnvironment) {
-  const { deployments } = hre;
-  const { nftBridgeProxy } = await getNamedAccountsInstance(hre);
-
-  if (nftBridgeProxy) {
-    return nftBridgeProxy;
-  }
-  const nftBridgeProxyDeployment = await deployments.getOrNull(
-    "NftBridgeProxy"
-  );
-  if (nftBridgeProxyDeployment) {
-    return nftBridgeProxyDeployment.address;
-  }
-  return nftBridgeProxyDeployment;
 }
 
 export async function getFederatorProxyAddress(hre: HardhatRuntimeEnvironment) {
