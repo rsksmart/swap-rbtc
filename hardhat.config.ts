@@ -9,7 +9,8 @@ import "hardhat-erc1820";
 
 import {
   RSK_TEST_NET_CHAIN_ID,
-  RSK_MAIN_NET_CHAIN_ID
+  RSK_MAIN_NET_CHAIN_ID,
+  HARDHAT_TEST_NET_CHAIN_ID
 } from "./utils/chains";
 
 import "@openzeppelin/hardhat-upgrades";
@@ -26,14 +27,51 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
+const config: HardhatUserConfig = {
+  solidity: "0.8.9",
+  networks: {
+    hardhat: {
+      live: false,
+      blockGasLimit: 6800000,
+      chainId: HARDHAT_TEST_NET_CHAIN_ID,
+      gasPrice: 60000000,
+      hardfork: 'istanbul', // London hardfork is incompatible with RSK gasPrice
 
-const ACCOUNTS = {
-  count: 1,
-  mnemonic: process.env.MNEMONIC,
-  path: "m/44'/60'/0'/0",
+      tags: ['test', 'local'],
+    },
+    // RSK
+    rsktestnet: {
+      live: true,
+      url: 'https://public-node.testnet.rsk.co',
+      blockGasLimit: 6800000,
+      gasPrice: 68000000, // 0.06 gwei
+      chainId: RSK_TEST_NET_CHAIN_ID,
+      hardfork: 'istanbul', // London hardfork is incompatible with RSK gasPrice
+      accounts: {
+        count: 1,
+        mnemonic: process.env.MNEMONIC,
+        path: "m/44'/60'/0'/0",
+      }
+    },
+  },
+  namedAccounts: {
+    deployer: 0,
+    multiSig: getMultiSigAddressesByChainId(),
+    proxyAdmin: getProxyAdminAddressesByChainId(),
+    sideToken: getSideWbtcAddressesByChainId(),
+  },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS !== undefined,
+    currency: "USD",
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
+
 
 
 function getMultiSigAddressesByChainId() {
@@ -54,15 +92,6 @@ function getProxyAdminAddressesByChainId() {
   return proxyAdminAddressesByChainId;
 }
 
-function getBridgeProxyAddressesByChainId() {
-  const bridgeProxyAddressesByChainId: {
-    [index: number]: string
-  } = {};
-  bridgeProxyAddressesByChainId[RSK_MAIN_NET_CHAIN_ID] = '0x9d11937e2179dc5270aa86a3f8143232d6da0e69';
-  bridgeProxyAddressesByChainId[RSK_TEST_NET_CHAIN_ID] = '0x684a8a976635fb7ad74a0134ace990a6a0fcce84';
-  return bridgeProxyAddressesByChainId;
-}
-
 function getSideWbtcAddressesByChainId() {
   const sideWbtcAddressesByChainId: {
     [index: number]: string
@@ -70,39 +99,5 @@ function getSideWbtcAddressesByChainId() {
   sideWbtcAddressesByChainId[RSK_TEST_NET_CHAIN_ID] = '0xb94e4a2ab8057d55a5764861ea1e3104614ce944';
   return sideWbtcAddressesByChainId;
 }
-
-
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-const config: HardhatUserConfig = {
-  solidity: "0.8.2",
-  networks: {
-    // RSK
-    rsktestnet: {
-      live: true,
-      url: 'https://public-node.testnet.rsk.co',
-      blockGasLimit: 6800000,
-      gasPrice: 68000000, // 0.06 gwei
-      chainId: RSK_TEST_NET_CHAIN_ID,
-      hardfork: 'istanbul', // London hardfork is incompatible with RSK gasPrice
-      accounts: ACCOUNTS
-    },
-  },
-  namedAccounts: {
-    deployer: 0,
-    multiSig: getMultiSigAddressesByChainId(),
-    proxyAdmin: getProxyAdminAddressesByChainId(),
-    bridgeProxy: getBridgeProxyAddressesByChainId(),
-    sideWtbtc: getSideWbtcAddressesByChainId(),
-  },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
-  },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
-};
 
 export default config;

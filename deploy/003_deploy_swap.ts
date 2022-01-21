@@ -1,15 +1,17 @@
+const SwapRbtcProxy = 'SwapRbtcProxy';
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import {
   getProxyAdminAddress,
   getSideWrappedBtcAddress,
 } from "../utils/address";
+import { isRSK } from "../utils/chains";
 import { ethers } from "hardhat";
 import { DeployResult } from "hardhat-deploy/dist/types";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts } = hre;
-  const { deploy } = deployments;
+  const { deployments, getNamedAccounts, network } = hre;
+  const { deploy, log } = deployments;
 
   const { deployer } = await getNamedAccounts();
   const proxyAdminAddress = await getProxyAdminAddress(hre);
@@ -28,25 +30,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const swapInstance = factorySwapRBTC.attach(deploySwap.address);
   const encodedSwapInitialize = swapInstance.interface.encodeFunctionData("initialize", swapInitializeParams);
 
-  // await swapInstance.callStatic.initialize(swapInitializeParams);
-  // const swapInterface = new ethers.utils.Interface(deploySwap.abi);
-  // swapInterface.encodeFunctionData
+  let constructorArguments = [
+    deploySwap.address,
+    proxyAdminAddress,
+    encodedSwapInitialize
+  ];
 
-  // using ethers
-  // const deployedContract = await upgrades.deployProxy(factorySwapRBTC, [sideWrappedBtcAddress], {
-  //   kind: "transparent",
-  // });
-
-  await deploy('SwapRbtcProxy', {
+  const deployProxyResult = await deploy('SwapRbtcProxy', {
     from: deployer,
     contract: 'TransparentUpgradeableProxy',
-    args: [
-      deploySwap.address,
-      proxyAdminAddress,
-      encodedSwapInitialize
-    ],
+    args: constructorArguments,
     log: true
   });
+
+  if (deployProxyResult.newlyDeployed) {
+    log(`Contract ${SwapRbtcProxy} deployed at ${deployProxyResult.address} using ${deployProxyResult.receipt?.gasUsed.toString()} gas`);
+  }
 };
 export default func;
 func.id = "SwapWTBTCtoRBTC";
