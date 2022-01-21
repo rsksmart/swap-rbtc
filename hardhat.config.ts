@@ -27,6 +27,8 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+const MNEMONIC = process.env.MNEMONIC ?? 'test test test test test test test test test test test junk';
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -52,7 +54,7 @@ const config: HardhatUserConfig = {
       hardfork: 'istanbul', // London hardfork is incompatible with RSK gasPrice
       accounts: {
         count: 1,
-        mnemonic: process.env.MNEMONIC,
+        mnemonic: MNEMONIC,
         path: "m/44'/60'/0'/0",
       }
     },
