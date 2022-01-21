@@ -1,0 +1,38 @@
+name: "Smart Contracts Unit Tests"
+on:
+   push:
+    branches: [main]
+   pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [main]
+
+jobs:
+  unit-test:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Use Node 16
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Solhint
+        run: npm run lint
+
+      - name: Tests
+        run: npm run test
+
+  deploy:
+    name: Run deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy contracts
+        run: npm run deploy hardhat        
