@@ -26,23 +26,5 @@ jobs:
       - name: Tests
         run: npm run test
 
-  deploy:
-    name: Run deploy
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Use Node 16
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-              
-      - name: Install dependencies
-        run: npm ci
-
       - name: Deploy contracts
-        run: >
-          MNEMONIC=${{secrets.MNEMONIC}}
-          npm run deploy hardhat        
+        run: npm run deploy hardhat        
