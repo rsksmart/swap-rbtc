@@ -27,21 +27,14 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+const MNEMONIC = process.env.MNEMONIC ?? 'test test test test test test test test test test test junk';
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
 const config: HardhatUserConfig = {
   solidity: "0.8.9",
   networks: {
-    hardhat: {
-      live: false,
-      blockGasLimit: 6800000,
-      chainId: HARDHAT_TEST_NET_CHAIN_ID,
-      gasPrice: 60000000,
-      hardfork: 'istanbul', // London hardfork is incompatible with RSK gasPrice
-
-      tags: ['test', 'local'],
-    },
     // RSK
     rsktestnet: {
       live: true,
@@ -52,7 +45,7 @@ const config: HardhatUserConfig = {
       hardfork: 'istanbul', // London hardfork is incompatible with RSK gasPrice
       accounts: {
         count: 1,
-        mnemonic: process.env.MNEMONIC,
+        mnemonic: MNEMONIC,
         path: "m/44'/60'/0'/0",
       }
     },
