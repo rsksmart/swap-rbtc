@@ -68,52 +68,12 @@ describe("Swap RBTC", function () {
   });
 
   it("Should Not be allowed to withdraw RBTC When balance is not enough", async function () {
-    const quarterEther = halfEther.div(2);
     await sideTokenBtc.connect(minter).mint(sender.address, halfEther, "0x", "0x");
-    // const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
-
-    // expect(senderBalance.toString()).to.equals(halfEther.toString());
-    // await sideTokenBtc.connect(sender).approve(swapRBTC.address, quarterEther);
-
-    // await deployer.sendTransaction({
-    //   to: swapRBTC.address,
-    //   value: oneEther
-    // });
-
-    // const balanceBeforeSwap = await sender.getBalance();
-    // const receipt = await swapRBTC.connect(sender).swapWRBTCtoRBTC(quarterEther, sideTokenBtc.address);
-    // const balanceAfterSwap = await sender.getBalance();
-
-    // const tx = await network.provider.send("eth_getTransactionReceipt", [receipt.hash]);
-    // const effectiveGasPrice = BigNumber.from(tx.effectiveGasPrice);
-    // const gasUsed = BigNumber.from(tx.gasUsed);
-
-    // expect(balanceAfterSwap.add(effectiveGasPrice.mul(gasUsed)).sub(quarterEther.add(balanceBeforeSwap)).isZero()).to.be.true;
     await expect(swapRBTC.connect(sender).withdrawalRBTC(halfEther)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
   it("Should Not be allowed to withdraw WRBTC When balance is not enough", async function () {
     await sideTokenBtc.connect(minter).mint(sender.address, halfEther, "0x", "0x");
-    // const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
-
-    // expect(senderBalance.toString()).to.equals(halfEther.toString());
-    // await sideTokenBtc.connect(sender).approve(swapRBTC.address, quarterEther);
-
-    // await deployer.sendTransaction({
-    //   to: swapRBTC.address,
-    //   value: oneEther
-    // });
-
-    // const balanceBeforeSwap = await sender.getBalance();
-    // const receipt = await swapRBTC.connect(sender).swapWRBTCtoRBTC(quarterEther, sideTokenBtc.address);
-    // const balanceAfterSwap = await sender.getBalance();
-
-    // const tx = await network.provider.send("eth_getTransactionReceipt", [receipt.hash]);
-    // const effectiveGasPrice = BigNumber.from(tx.effectiveGasPrice);
-    // const gasUsed = BigNumber.from(tx.gasUsed);
-
-    // expect(balanceAfterSwap.add(effectiveGasPrice.mul(gasUsed)).sub(quarterEther.add(balanceBeforeSwap)).isZero()).to.be.true;
-
     await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 });
