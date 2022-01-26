@@ -68,12 +68,10 @@ describe("Swap RBTC", function () {
   });
 
   it("Should Not be allowed to withdraw RBTC When balance is not enough", async function () {
-    await sideTokenBtc.connect(minter).mint(sender.address, halfEther, "0x", "0x");
     await expect(swapRBTC.connect(sender).withdrawalRBTC(halfEther)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
   it("Should Not be allowed to withdraw WRBTC When balance is not enough", async function () {
-    await sideTokenBtc.connect(minter).mint(sender.address, halfEther, "0x", "0x");
     await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 });
