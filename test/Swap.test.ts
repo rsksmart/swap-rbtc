@@ -74,4 +74,12 @@ describe("Swap RBTC", function () {
   it("Should Not be allowed to withdraw WRBTC When balance is not enough", async function () {
     await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
+
+  it("Should Not be allowed to not owner add an address to the sidetoken", async function () {
+    await expect(swapRBTC.addSideTokenBtc(sideTokenBtc.address)).to.be.revertedWith("Ownable: caller is not the owner");
+  });
+
+  it("Should Not be allowed to not owner remove an address to the sidetoken", async function () {
+    await expect(swapRBTC.removeSideTokenBtc(sideTokenBtc.address)).to.be.revertedWith("Ownable: caller is not the owner");
+  });
 });
