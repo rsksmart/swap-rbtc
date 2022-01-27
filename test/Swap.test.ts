@@ -25,7 +25,8 @@ describe("Swap RBTC", function () {
       1
     );
 
-    swapRBTC = await upgrades.deployProxy(factorySwapRBTC, [sideTokenBtc.address]);
+    swapRBTC = await factorySwapRBTC.deploy();
+    await swapRBTC.initialize(sideTokenBtc.address);
   });
 
   it("Should Swap the side token BTC to RBTC", async function () {
@@ -75,11 +76,43 @@ describe("Swap RBTC", function () {
     await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
-  it("Should Not be allowed to not owner add an address to the sidetoken", async function () {
-    await expect(swapRBTC.addSideTokenBtc(sideTokenBtc.address)).to.be.revertedWith("Ownable: caller is not the owner");
+  it("Should only owner be allowed to add a side token address", async function () {
+    await expect(swapRBTC.connect(minter).addSideTokenBtc(sideTokenBtc.address)).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
-  it("Should Not be allowed to not owner remove an address to the sidetoken", async function () {
-    await expect(swapRBTC.removeSideTokenBtc(sideTokenBtc.address)).to.be.revertedWith("Ownable: caller is not the owner");
+  it("Should not allow null address", async function () {
+    await expect(swapRBTC.addSideTokenBtc("0x0000000000000000000000000000000000000000")).to.be.revertedWith("SwapRBTC: sideBTC is null");
+  });
+
+  it("Should add side token address", async function () {
+    await expect(swapRBTC.addSideTokenBtc(minter.address)).to.be.emit(swapRBTC, 'sideTokenBtcAdded');
+  });
+
+  it("Should only owner be allowed to remove a side token address", async function () {
+    await expect(swapRBTC.connect(minter).removeSideTokenBtc(sideTokenBtc.address)).to.be.revertedWith("Ownable: caller is not the owner");
+  });
+
+  it("Should not allow null address on remove side token", async function () {
+    await expect(swapRBTC.removeSideTokenBtc("0x0000000000000000000000000000000000000000")).to.be.revertedWith("SwapRBTC: sideBTC is null");
+  });
+
+  it("Should remove side token address", async function () {
+    await expect(swapRBTC.removeSideTokenBtc(minter.address)).to.be.emit(swapRBTC, 'sideTokenBtcRemoved');
+  });
+
+  it("Should have one side token", async function() {
+    const qtdSideToken = await swapRBTC.lengthSideTokenBtc();
+    expect(qtdSideToken.toString()).to.be.equal('1');
+  });
+
+  it('Should contains the side token address', async function(){
+    await swapRBTC.addSideTokenBtc(minter.address);
+    expect(await swapRBTC.containsSideTokenBtc(minter.address)).to.be.equal(true);
+  });
+
+  it('Should have the deployer address on index 0', async function() {
+    await swapRBTC.addSideTokenBtc(minter.address);
+    const address = await swapRBTC.sideTokenBtcAt(1);
+    expect(address).to.be.equal(minter.address);
   });
 });

@@ -44,6 +44,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     // keccak256("ERC777TokensRecipient")
     fee = 0;
     ERC1820.setInterfaceImplementer(address(this), 0xb281fc8c12954d22544db45de3159a39272895b169a852b314f9cc762e44c53b, address(this));
+    __Ownable_init();
   }
 
   receive() external payable {
