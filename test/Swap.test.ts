@@ -11,6 +11,8 @@ describe("Swap RBTC", function () {
   const oneEther = ethers.utils.parseUnits("1.0", "ether");
   const halfEther = ethers.utils.parseUnits("0.5", "ether");
   const quarterEther = halfEther.div(2);
+  const bnbContract = "0xB8c77482e45F1F44dE1745F52C74426C631bDD52";
+  const nullAddress = "0x0000000000000000000000000000000000000000";
   let deployer: SignerWithAddress, minter: SignerWithAddress, sender: SignerWithAddress;
 
   beforeEach(async () => {
@@ -81,11 +83,11 @@ describe("Swap RBTC", function () {
   });
 
   it("Should not allow null address", async function () {
-    await expect(swapRBTC.addSideTokenBtc("0x0000000000000000000000000000000000000000")).to.be.revertedWith("SwapRBTC: sideBTC is null");
+    await expect(swapRBTC.addSideTokenBtc(nullAddress)).to.be.revertedWith("SwapRBTC: sideBTC is null");
   });
 
   it("Should add side token address", async function () {
-    await expect(swapRBTC.addSideTokenBtc(minter.address)).to.be.emit(swapRBTC, 'sideTokenBtcAdded');
+    await expect(swapRBTC.addSideTokenBtc(bnbContract)).to.be.emit(swapRBTC, 'sideTokenBtcAdded');
   });
 
   it("Should only owner be allowed to remove a side token address", async function () {
@@ -93,16 +95,16 @@ describe("Swap RBTC", function () {
   });
 
   it("Should not allow null address on remove side token", async function () {
-    await expect(swapRBTC.removeSideTokenBtc("0x0000000000000000000000000000000000000000")).to.be.revertedWith("SwapRBTC: sideBTC is null");
+    await expect(swapRBTC.removeSideTokenBtc(nullAddress)).to.be.revertedWith("SwapRBTC: sideBTC is null");
   });
 
   it("Should remove side token address", async function () {
-    await expect(swapRBTC.removeSideTokenBtc(minter.address)).to.be.emit(swapRBTC, 'sideTokenBtcRemoved');
+    await expect(swapRBTC.removeSideTokenBtc(bnbContract)).to.be.emit(swapRBTC, 'sideTokenBtcRemoved');
   });
 
   it("Should have one side token", async function() {
-    const qtdSideToken = await swapRBTC.lengthSideTokenBtc();
-    expect(qtdSideToken.toString()).to.be.equal('1');
+    const lenSideToken = await swapRBTC.lengthSideTokenBtc();
+    expect(lenSideToken.toString()).to.be.equal('1');
   });
 
   it('Should contains the side token address', async function(){
@@ -110,7 +112,7 @@ describe("Swap RBTC", function () {
     expect(await swapRBTC.containsSideTokenBtc(minter.address)).to.be.equal(true);
   });
 
-  it('Should have the deployer address on index 0', async function() {
+  it('Should have the sideTokenBtc address on index 1', async function() {
     await swapRBTC.addSideTokenBtc(minter.address);
     const address = await swapRBTC.sideTokenBtcAt(1);
     expect(address).to.be.equal(minter.address);
