@@ -36,22 +36,28 @@ describe("Swap RBTC", function () {
     const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
 
     expect(senderBalance.toString()).to.equals(oneEther.toString());
-    await sideTokenBtc.connect(sender).approve(swapRBTC.address, halfEther);
 
     await deployer.sendTransaction({
       to: swapRBTC.address,
       value: oneEther
     });
+    
+    await sideTokenBtc.connect(sender).approve(swapRBTC.address, halfEther);
 
-    const balanceBeforeSwap = await sender.getBalance();
-    const receipt = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEther, sideTokenBtc.address);
-    const balanceAfterSwap = await sender.getBalance();
+    const balanceBeforeSwap = await sender.getBalance(); // 100
+    const response = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEther, sideTokenBtc.address); // 50
+    const receipt = await response.wait();
+    console.log(response);
+    const balanceAfterSwap = await sender.getBalance(); // 49
 
-    const tx = await network.provider.send("eth_getTransactionReceipt", [receipt.hash]);
-    const effectiveGasPrice = BigNumber.from(tx.effectiveGasPrice);
-    const gasUsed = BigNumber.from(tx.gasUsed);
+    const effectiveGasPrice = BigNumber.from(receipt.effectiveGasPrice); // 1
+    const gasUsed = BigNumber.from(receipt.gasUsed);
+    const spentInGas = effectiveGasPrice.mul(gasUsed);
+    console.log(spentInGas.toString())
+    console.log(balanceAfterSwap.toString())
+    console.log(balanceBeforeSwap.toString())
 
-    expect(balanceAfterSwap.add(effectiveGasPrice.mul(gasUsed)).sub(halfEther.add(balanceBeforeSwap)).isZero()).to.be.true;
+    expect(balanceAfterSwap).to.be.equal(balanceBeforeSwap.sub(spentInGas).add(halfEther))
   });
 
   it("Should Revert swap when transfer amount exceeds allowance", async function () {
@@ -107,7 +113,7 @@ describe("Swap RBTC", function () {
     expect(lenSideToken.toString()).to.be.equal('1');
   });
 
-  it('Should contains the side token address', async function(){
+  it('Should contain the side token after adding it', async function(){
     await swapRBTC.addSideTokenBtc(minter.address);
     expect(await swapRBTC.containsSideTokenBtc(minter.address)).to.be.equal(true);
   });
@@ -116,5 +122,34 @@ describe("Swap RBTC", function () {
     await swapRBTC.addSideTokenBtc(minter.address);
     const address = await swapRBTC.sideTokenBtcAt(1);
     expect(address).to.be.equal(minter.address);
+  });
+
+  it("Should receive deposit as default behavior", async function () {
+    const balanceBeforeDeposit = await sender.getBalance();
+    const balanceInContractBeforeDeposit = await ethers.provider.getBalance(swapRBTC.address);
+    const lockedAmountBefore = await swapRBTC.balance(sender.address);
+
+    const depositedAmount = halfEther;
+
+    const receipt = await sender.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+
+    await expect(receipt).to.emit(swapRBTC, "Deposit");
+    const balanceAfterDeposit = await sender.getBalance();
+    const tx = await network.provider.send("eth_getTransactionReceipt", [receipt.hash]);
+    const effectiveGasPrice = BigNumber.from(tx.effectiveGasPrice);
+    const gasUsed = BigNumber.from(tx.gasUsed);
+
+    const totalForTheDeposit = depositedAmount.add(effectiveGasPrice.mul(gasUsed));
+    const spent = balanceBeforeDeposit.sub(balanceAfterDeposit);
+    const balanceInContractAfterDeposit = await ethers.provider.getBalance(swapRBTC.address);
+    const lockedAmountAfter = await swapRBTC.balance(sender.address);
+
+    expect(spent).to.be.equal(totalForTheDeposit);
+    expect(lockedAmountAfter).to.be.equal(lockedAmountBefore.add(depositedAmount));
+
+    expect(balanceInContractAfterDeposit).to.be.equal(balanceInContractBeforeDeposit.add(depositedAmount));
   });
 });
