@@ -19,15 +19,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   event RbtcSwapRbtc(address sideTokenBtc, uint256 amountSwapped);
   event WithdrawalRBTC(address indexed src, uint256 wad);
   event WithdrawalWRBTC(address indexed src, uint256 wad);
-  event Received(address sender, uint256 amount);
-  event TokenReceived(
-    address operator,
-    address from,
-    address to,
-    uint256 amount,
-    bytes userData,
-    bytes operatorData
-  );
+  event Deposit(address sender, uint256 amount, address tokenAddress);
 
   IERC1820Registry constant internal ERC1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
   EnumerableSetUpgradeable.AddressSet internal enumerableSideTokenBtc;
@@ -48,11 +40,14 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   }
 
   receive() external payable {
-		// The fallback function is needed to receive WRBTC
-    balance[msg.sender] += msg.value;
-    emit Received(msg.sender, msg.value);
+		// The fallback function is needed to receive RBTC
+    _deposit(msg.sender, msg.value, address(0));
 	}
 
+  function _deposit(address from, uint256 amount, address tokenAddress) internal {
+    balance[from] += amount;
+    emit Deposit(from, amount, tokenAddress);
+	}
   function withdrawalRBTC(uint256 amount) external {
     require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
@@ -65,6 +60,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     emit WithdrawalRBTC(msg.sender, amount);
   }
 
+// TODO: Rename to withdrawSideToken
   function withdrawalWRBTC(uint256 amount, address sideTokenBtcContract) external {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
     require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
@@ -140,14 +136,19 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     * This function may revert to prevent the operation from being executed.
   */
   function tokensReceived(
-    address operator,
+    address,
     address from,
     address to,
     uint amount,
-    bytes calldata userData,
-    bytes calldata operatorData
+    bytes calldata,
+    bytes calldata
   ) external override {
-    emit TokenReceived(operator, from, to, amount, userData, operatorData);
-  }
+    //Hook from ERC777address / ERC20
+    address tokenAddress = _msgSender();
+		if(from == address(this)) return; // WARN: we don't deposit when the caller was the contract itself as that would duplicate the deposit.
+		require(to == address(this), "SwapRBTC: Invalid 'to' address"); // verify that the 'to' address is the same as the address of this contract.
+    require(enumerableSideTokenBtc.contains(tokenAddress), "SwapRBTC: Side Token not found");
 
+    _deposit(from, amount, tokenAddress);
+  }
 }
