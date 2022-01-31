@@ -14,6 +14,7 @@ describe("Swap RBTC", function () {
   const quarterEther = halfEther.div(2);
   const bnbContract = "0xB8c77482e45F1F44dE1745F52C74426C631bDD52";
   const nullAddress = "0x0000000000000000000000000000000000000000";
+  const invalidAddress = "0xB8c77482e45F1F44dE1745F52C74426C631bDD5";
   let deployer: SignerWithAddress, minter: SignerWithAddress, sender: SignerWithAddress;
 
   beforeEach(async () => {
@@ -99,7 +100,12 @@ describe("Swap RBTC", function () {
     await expect(swapRBTC.removeSideTokenBtc(nullAddress)).to.be.revertedWith("SwapRBTC: sideBTC is null");
   });
 
+  it("Should not remove an unknown address", async function () {
+    await expect(swapRBTC.removeSideTokenBtc(bnbContract)).to.be.revertedWith("SwapRBTC: side token not founded");
+  });
+
   it("Should remove side token address", async function () {
+    await swapRBTC.addSideTokenBtc(bnbContract);
     await expect(swapRBTC.removeSideTokenBtc(bnbContract)).to.be.emit(swapRBTC, 'sideTokenBtcRemoved');
   });
 
@@ -179,5 +185,5 @@ describe("Swap RBTC", function () {
     expect(senderBalance).to.be.equal(oneEther);
 
     await expect(anotherSideToken.connect(sender).send(swapRBTC.address, halfEther, "0x")).to.be.revertedWith("SwapRBTC: Side Token not found");
-  });
+41  });
 });
