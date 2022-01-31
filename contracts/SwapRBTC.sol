@@ -20,7 +20,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   event WithdrawalRBTC(address indexed src, uint256 wad);
   event WithdrawalWRBTC(address indexed src, uint256 wad);
   event Deposit(address sender, uint256 amount, address tokenAddress);
-
+  
   IERC1820Registry constant internal ERC1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
   EnumerableSetUpgradeable.AddressSet internal enumerableSideTokenBtc;
 
@@ -145,10 +145,10 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   ) external override {
     //Hook from ERC777address / ERC20
     address tokenAddress = _msgSender();
-		if(from == address(this)) return; // WARN: we don't deposit when the caller was the contract itself as that would duplicate the deposit.
+  	if(from == address(this)) return; // WARN: we don't deposit when the caller was the contract itself as that would duplicate the deposit.
 		require(to == address(this), "SwapRBTC: Invalid 'to' address"); // verify that the 'to' address is the same as the address of this contract.
     require(enumerableSideTokenBtc.contains(tokenAddress), "SwapRBTC: Side Token not found");
-
+    
     _deposit(from, amount, tokenAddress);
   }
 }
