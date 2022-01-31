@@ -1,10 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 import chai, { expect } from 'chai';
 import { solidity } from "ethereum-waffle";
+
 chai.use(solidity);
 
 import { BigNumber, Contract } from "ethers";
-import { ethers, upgrades, network } from "hardhat";
+import { ethers, network } from "hardhat";
 
 describe("Swap RBTC", function () {
   let swapRBTC: Contract, sideTokenBtc: Contract;
@@ -41,22 +42,16 @@ describe("Swap RBTC", function () {
       to: swapRBTC.address,
       value: oneEther
     });
-    
+
     await sideTokenBtc.connect(sender).approve(swapRBTC.address, halfEther);
-
-    const balanceBeforeSwap = await sender.getBalance(); // 100
-    const response = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEther, sideTokenBtc.address); // 50
+    const balanceBeforeSwap = await sender.getBalance();
+    const response = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEther, sideTokenBtc.address);
     const receipt = await response.wait();
-    console.log(response);
-    const balanceAfterSwap = await sender.getBalance(); // 49
 
-    const effectiveGasPrice = BigNumber.from(receipt.effectiveGasPrice); // 1
+    const balanceAfterSwap = await sender.getBalance();
+    const effectiveGasPrice = BigNumber.from(receipt.effectiveGasPrice);
     const gasUsed = BigNumber.from(receipt.gasUsed);
     const spentInGas = effectiveGasPrice.mul(gasUsed);
-    console.log(spentInGas.toString())
-    console.log(balanceAfterSwap.toString())
-    console.log(balanceBeforeSwap.toString())
-
     expect(balanceAfterSwap).to.be.equal(balanceBeforeSwap.sub(spentInGas).add(halfEther))
   });
 
@@ -135,12 +130,11 @@ describe("Swap RBTC", function () {
       to: swapRBTC.address,
       value: depositedAmount
     });
-
+    const response = await receipt.wait();
     await expect(receipt).to.emit(swapRBTC, "Deposit");
     const balanceAfterDeposit = await sender.getBalance();
-    const tx = await network.provider.send("eth_getTransactionReceipt", [receipt.hash]);
-    const effectiveGasPrice = BigNumber.from(tx.effectiveGasPrice);
-    const gasUsed = BigNumber.from(tx.gasUsed);
+     const effectiveGasPrice = BigNumber.from(response.effectiveGasPrice);
+    const gasUsed = BigNumber.from(response.gasUsed);
 
     const totalForTheDeposit = depositedAmount.add(effectiveGasPrice.mul(gasUsed));
     const spent = balanceBeforeDeposit.sub(balanceAfterDeposit);
@@ -151,5 +145,39 @@ describe("Swap RBTC", function () {
     expect(lockedAmountAfter).to.be.equal(lockedAmountBefore.add(depositedAmount));
 
     expect(balanceInContractAfterDeposit).to.be.equal(balanceInContractBeforeDeposit.add(depositedAmount));
+  });
+
+  it('sends tokens to a contract from an externally-owned account', async function () {
+    await sideTokenBtc.connect(minter).mint(sender.address, oneEther, "0x", "0x");
+    const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
+    expect(senderBalance.toString()).to.equals(oneEther.toString());
+
+    const prevBalance = await swapRBTC.balance(sender.address);
+
+    const receipt = await sideTokenBtc.connect(sender).send(swapRBTC.address, halfEther, "0x");
+    const lockedAmountAfter = await swapRBTC.balance(sender.address);
+
+    await expect(receipt).to.emit(swapRBTC, "Deposit").withArgs(sender.address, halfEther, sideTokenBtc.address);
+    expect(halfEther.add(prevBalance)).to.be.equal(lockedAmountAfter);
+  });
+  
+  it('Sending a token reverts when balance is not enough', async function () {
+    await expect(sideTokenBtc.send(swapRBTC.address, halfEther, "0x")).to.be.revertedWith("ERC777: transfer amount exceeds balance");
+  });
+
+  it('Sending a token reverts when token is not registered', async function () {
+    const factorySideToken = await ethers.getContractFactory("SideToken");
+    const anotherSideToken = await factorySideToken.deploy(
+      "AnotherSideTokenBTC",
+      "asWBTC",
+      minter.address,
+      1
+    );
+    await anotherSideToken.connect(minter).mint(sender.address, oneEther, "0x", "0x");
+    await sideTokenBtc.connect(minter).mint(sender.address, oneEther, "0x", "0x");
+    const senderBalance: BigNumber = await anotherSideToken.balanceOf(sender.address);
+    expect(senderBalance).to.be.equal(oneEther);
+
+    await expect(anotherSideToken.connect(sender).send(swapRBTC.address, halfEther, "0x")).to.be.revertedWith("SwapRBTC: Side Token not found");
   });
 });
