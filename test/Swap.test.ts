@@ -14,7 +14,6 @@ describe("Swap RBTC", function () {
   const quarterEther = halfEther.div(2);
   const bnbContract = "0xB8c77482e45F1F44dE1745F52C74426C631bDD52";
   const nullAddress = "0x0000000000000000000000000000000000000000";
-  const invalidAddress = "0xB8c77482e45F1F44dE1745F52C74426C631bDD5";
   let deployer: SignerWithAddress, minter: SignerWithAddress, sender: SignerWithAddress;
 
   beforeEach(async () => {
@@ -72,7 +71,7 @@ describe("Swap RBTC", function () {
       .to.be.revertedWith("ERC777: transfer amount exceeds allowance");
   });
 
-  it("Should Not be allowed to withdraw RBTC When balance is not enough", async function () {
+  it("Should Not be allowed to withdraw RBTC When sender balance is not enough", async function () {
     await expect(swapRBTC.connect(sender).withdrawalRBTC(halfEther)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
@@ -86,6 +85,11 @@ describe("Swap RBTC", function () {
 
   it("Should not allow null address", async function () {
     await expect(swapRBTC.addSideTokenBtc(nullAddress)).to.be.revertedWith("SwapRBTC: sideBTC is null");
+  });
+
+  it("Should verify if the address was already inserted before", async function () {
+    await swapRBTC.addSideTokenBtc(bnbContract)
+    await expect(swapRBTC.addSideTokenBtc(bnbContract)).to.be.revertedWith("SwapRBTC: side token already included");
   });
 
   it("Should add side token address", async function () {
