@@ -221,5 +221,13 @@ describe("Swap RBTC", function () {
     expect(senderBalance).to.be.equal(oneEther);
 
     await expect(anotherSideToken.connect(sender).send(swapRBTC.address, halfEther, "0x")).to.be.revertedWith("SwapRBTC: Side Token not found");
-41  });
+  });
+
+  it('Should validate an invalid address when call the token received method', async function () {
+    await expect(swapRBTC.tokensReceived(bnbContract, sender.address, deployer.address, 0, 0, 0)).to.be.revertedWith("SwapRBTC: Invalid 'to' address");
+  });
+
+  it('Should validate if the sender address is already included in the list on token received method', async function () {
+    await expect(swapRBTC.tokensReceived(deployer.address, sender.address, swapRBTC.address, 0, 0, 0)).to.be.revertedWith("SwapRBTC: Side Token not found");
+  });
 });
