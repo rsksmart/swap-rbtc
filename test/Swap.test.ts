@@ -71,8 +71,40 @@ describe("Swap RBTC", function () {
       .to.be.revertedWith("ERC777: transfer amount exceeds allowance");
   });
 
+  it("Should Not be allowed to withdraw RBTC When contract balance is not enough", async function () {
+    const depositedAmount = halfEther;
+
+    const receipt = await sender.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+    await receipt.wait();
+
+    const receipt2 = await minter.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+    await receipt2.wait();
+    
+    await expect(swapRBTC.connect(sender).withdrawalRBTC(oneEther.add(quarterEther))).to.be.revertedWith("SwapRBTC: amount > balance");
+  });
+
   it("Should Not be allowed to withdraw RBTC When sender balance is not enough", async function () {
-    await expect(swapRBTC.connect(sender).withdrawalRBTC(halfEther)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
+    const depositedAmount = halfEther;
+
+    const receipt = await sender.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+    await receipt.wait();
+
+    const receipt2 = await minter.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+    await receipt2.wait();
+
+    await expect(swapRBTC.withdrawalRBTC(halfEther.add(quarterEther))).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
   it("Should Not be allowed to withdraw WRBTC When balance is not enough", async function () {
@@ -143,7 +175,7 @@ describe("Swap RBTC", function () {
     const response = await receipt.wait();
     await expect(receipt).to.emit(swapRBTC, "Deposit");
     const balanceAfterDeposit = await sender.getBalance();
-     const effectiveGasPrice = BigNumber.from(response.effectiveGasPrice);
+    const effectiveGasPrice = BigNumber.from(response.effectiveGasPrice);
     const gasUsed = BigNumber.from(response.gasUsed);
 
     const totalForTheDeposit = depositedAmount.add(effectiveGasPrice.mul(gasUsed));
