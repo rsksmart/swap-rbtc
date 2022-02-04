@@ -48,6 +48,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     balance[from] += amount;
     emit Deposit(from, amount, tokenAddress);
 	}
+
   function withdrawalRBTC(uint256 amount) external {
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
     require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");

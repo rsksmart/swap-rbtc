@@ -8,11 +8,11 @@ import { BigNumber, Contract } from "ethers";
 import { ethers, network } from "hardhat";
 
 describe("Swap RBTC", function () {
-  let swapRBTC: Contract, sideTokenBtc: Contract;
+  let swapRBTC: Contract, sideTokenBtc: Contract, fallbackRBTC: Contract;
   const oneEther = ethers.utils.parseUnits("1.0", "ether");
   const halfEther = ethers.utils.parseUnits("0.5", "ether");
   const quarterEther = halfEther.div(2);
-  const bnbContract = "0xB8c77482e45F1F44dE1745F52C74426C631bDD52";
+  const genericAddress = "0x9267B42909844e1F244c03100DD9c322157ccb47";
   const nullAddress = "0x0000000000000000000000000000000000000000";
   let deployer: SignerWithAddress, minter: SignerWithAddress, sender: SignerWithAddress;
 
@@ -20,6 +20,7 @@ describe("Swap RBTC", function () {
     [deployer, minter, sender] = await ethers.getSigners();
     const factorySwapRBTC = await ethers.getContractFactory("SwapRBTC");
     const factorySideToken = await ethers.getContractFactory("SideToken");
+    const factoryFallbackRBTC = await ethers.getContractFactory("FallbackRBTC");
 
     sideTokenBtc = await factorySideToken.deploy(
       "SideTokenBTC",
@@ -30,6 +31,7 @@ describe("Swap RBTC", function () {
 
     swapRBTC = await factorySwapRBTC.deploy();
     await swapRBTC.initialize(sideTokenBtc.address);
+    fallbackRBTC = await factoryFallbackRBTC.deploy();
   });
 
   it("Should Swap the side token BTC to RBTC", async function () {
@@ -71,6 +73,18 @@ describe("Swap RBTC", function () {
       .to.be.revertedWith("ERC777: transfer amount exceeds allowance");
   });
 
+  it("Should be allowed to withdraw RBTC", async function() {
+    const depositedAmount = halfEther;
+
+    const receipt = await sender.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+    await receipt.wait();
+
+    await expect(swapRBTC.connect(sender).withdrawalRBTC(quarterEther)).to.emit(swapRBTC, 'WithdrawalRBTC');
+  });
+
   it("Should Not be allowed to withdraw RBTC When contract balance is not enough", async function () {
     const depositedAmount = halfEther;
 
@@ -80,11 +94,11 @@ describe("Swap RBTC", function () {
     });
     await receipt.wait();
 
-    const receipt2 = await minter.sendTransaction({
+    const secondTransaction = await minter.sendTransaction({
       to: swapRBTC.address,
       value: depositedAmount
     });
-    await receipt2.wait();
+    await secondTransaction.wait();
     
     await expect(swapRBTC.connect(sender).withdrawalRBTC(oneEther.add(quarterEther))).to.be.revertedWith("SwapRBTC: amount > balance");
   });
@@ -98,34 +112,43 @@ describe("Swap RBTC", function () {
     });
     await receipt.wait();
 
-    const receipt2 = await minter.sendTransaction({
+    const secondTransaction = await minter.sendTransaction({
       to: swapRBTC.address,
       value: depositedAmount
     });
-    await receipt2.wait();
+    await secondTransaction.wait();
 
     await expect(swapRBTC.withdrawalRBTC(halfEther.add(quarterEther))).to.be.revertedWith("SwapRBTC: amount > senderBalance");
+  });
+
+  it.only("Should fallback when try to withdraw RBTC", async function() {
+    expect(swapRBTC.from(fallbackRBTC.address).withdrawalRBTC(halfEther)).to.be.revertedWith("SwapRBTC: withdrawalRBTC failed");
   });
 
   it("Should Not be allowed to withdraw WRBTC When balance is not enough", async function () {
     await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
+  it("Should add side token address", async function () {
+    await expect(swapRBTC.addSideTokenBtc(genericAddress)).to.be.emit(swapRBTC, 'sideTokenBtcAdded');
+  });
+
   it("Should only owner be allowed to add a side token address", async function () {
     await expect(swapRBTC.connect(minter).addSideTokenBtc(sideTokenBtc.address)).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
-  it("Should not allow null address", async function () {
+  it("Should not allow null address on add side token", async function () {
     await expect(swapRBTC.addSideTokenBtc(nullAddress)).to.be.revertedWith("SwapRBTC: sideBTC is null");
   });
 
-  it("Should verify if the address was already inserted before", async function () {
-    await swapRBTC.addSideTokenBtc(bnbContract)
-    await expect(swapRBTC.addSideTokenBtc(bnbContract)).to.be.revertedWith("SwapRBTC: side token already included");
+  it("Should verify if the address was already inserted before on add sidetoken", async function () {
+    await swapRBTC.addSideTokenBtc(genericAddress)
+    await expect(swapRBTC.addSideTokenBtc(genericAddress)).to.be.revertedWith("SwapRBTC: side token already included");
   });
 
-  it("Should add side token address", async function () {
-    await expect(swapRBTC.addSideTokenBtc(bnbContract)).to.be.emit(swapRBTC, 'sideTokenBtcAdded');
+  it("Should remove side token address", async function () {
+    await swapRBTC.addSideTokenBtc(genericAddress);
+    await expect(swapRBTC.removeSideTokenBtc(genericAddress)).to.be.emit(swapRBTC, 'sideTokenBtcRemoved');
   });
 
   it("Should only owner be allowed to remove a side token address", async function () {
@@ -137,12 +160,7 @@ describe("Swap RBTC", function () {
   });
 
   it("Should not remove an unknown address", async function () {
-    await expect(swapRBTC.removeSideTokenBtc(bnbContract)).to.be.revertedWith("SwapRBTC: side token not founded");
-  });
-
-  it("Should remove side token address", async function () {
-    await swapRBTC.addSideTokenBtc(bnbContract);
-    await expect(swapRBTC.removeSideTokenBtc(bnbContract)).to.be.emit(swapRBTC, 'sideTokenBtcRemoved');
+    await expect(swapRBTC.removeSideTokenBtc(genericAddress)).to.be.revertedWith("SwapRBTC: side token not founded");
   });
 
   it("Should have one side token", async function() {
@@ -224,7 +242,7 @@ describe("Swap RBTC", function () {
   });
 
   it('Should validate an invalid address when call the token received method', async function () {
-    await expect(swapRBTC.tokensReceived(bnbContract, sender.address, deployer.address, 0, 0, 0)).to.be.revertedWith("SwapRBTC: Invalid 'to' address");
+    await expect(swapRBTC.tokensReceived(genericAddress, sender.address, deployer.address, 0, 0, 0)).to.be.revertedWith("SwapRBTC: Invalid 'to' address");
   });
 
   it('Should validate if the sender address is already included in the list on token received method', async function () {
