@@ -20,7 +20,6 @@ describe("Swap RBTC", function () {
     [deployer, minter, sender] = await ethers.getSigners();
     const factorySwapRBTC = await ethers.getContractFactory("SwapRBTC");
     const factorySideToken = await ethers.getContractFactory("SideToken");
-    const factoryFallbackRBTC = await ethers.getContractFactory("FallbackRBTC");
 
     sideTokenBtc = await factorySideToken.deploy(
       "SideTokenBTC",
@@ -31,7 +30,6 @@ describe("Swap RBTC", function () {
 
     swapRBTC = await factorySwapRBTC.deploy();
     await swapRBTC.initialize(sideTokenBtc.address);
-    fallbackRBTC = await factoryFallbackRBTC.deploy();
   });
 
   it("Should Swap the side token BTC to RBTC", async function () {
@@ -121,12 +119,36 @@ describe("Swap RBTC", function () {
     await expect(swapRBTC.withdrawalRBTC(halfEther.add(quarterEther))).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
-  it.only("Should fallback when try to withdraw RBTC", async function() {
-    expect(swapRBTC.from(fallbackRBTC.address).withdrawalRBTC(halfEther)).to.be.revertedWith("SwapRBTC: withdrawalRBTC failed");
+  it("Should fallback when try to withdraw RBTC", async function() {
+    const factoryFallbackRBTC = await ethers.getContractFactory("FallbackRBTC");
+
+    fallbackRBTC = await factoryFallbackRBTC.deploy(swapRBTC.address);
+
+    fallbackRBTC.deposit({ value: halfEther });
+
+    expect(fallbackRBTC.withdraw(halfEther)).to.be.revertedWith("SwapRBTC: withdrawalRBTC failed");
   });
 
   it("Should Not be allowed to withdraw WRBTC When balance is not enough", async function () {
     await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
+  });
+
+  it.only("Should Not be allowed to withdraw WRBTC When the transfer from failed", async function () {
+    const factorySideTokenTest = await ethers.getContractFactory("SideTokenTest");
+
+    const sideTokenTest = await factorySideTokenTest.deploy();
+
+    await swapRBTC.addSideTokenBtc(sideTokenTest.address);
+
+    const depositedAmount = halfEther;
+
+    const receipt = await sender.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+    await receipt.wait();
+
+    await expect(swapRBTC.connect(sender).withdrawalWRBTC(quarterEther, sideTokenTest.address)).to.be.revertedWith("SwapRBTC: withdrawalWRBTC failed");
   });
 
   it("Should add side token address", async function () {
