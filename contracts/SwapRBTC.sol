@@ -48,9 +48,11 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     balance[from] += amount;
     emit Deposit(from, amount, tokenAddress);
 	}
+
   function withdrawalRBTC(uint256 amount) external {
-    require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
+    require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
+    
     balance[msg.sender] -= amount;
 
     // solhint-disable-next-line avoid-low-level-calls
@@ -67,7 +69,6 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
 
     ISideToken sideTokenBtc = ISideToken(sideTokenBtcContract);
     require(sideTokenBtc.balanceOf(address(this)) >= amount, "SwapRBTC: amount > balance");
-    require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
     balance[msg.sender] -= amount;
     bool successCall = sideTokenBtc.transferFrom(address(this), msg.sender, amount);
     require(successCall, "SwapRBTC: withdrawalWRBTC failed");
@@ -76,6 +77,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
 
   function _addSideTokenBtc(address sideTokenBtcContract) internal {
     require(sideTokenBtcContract != NULL_ADDRESS, "SwapRBTC: sideBTC is null");
+    require(!enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: side token already included");
     enumerableSideTokenBtc.add(sideTokenBtcContract);
     emit sideTokenBtcAdded(sideTokenBtcContract);
   }
@@ -86,6 +88,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
 
   function _removeSideTokenBtc(address sideTokenBtcContract) internal {
     require(sideTokenBtcContract != NULL_ADDRESS, "SwapRBTC: sideBTC is null");
+    require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: side token not founded");
     enumerableSideTokenBtc.remove(sideTokenBtcContract);
     emit sideTokenBtcRemoved(sideTokenBtcContract);
   }
