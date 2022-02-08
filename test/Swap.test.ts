@@ -133,7 +133,7 @@ describe("Swap RBTC", function () {
     await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
-  it.only("Should Not be allowed to withdraw WRBTC When the transfer from failed", async function () {
+  it("Should Not be allowed to withdraw WRBTC When the transfer from failed", async function () {
     const factorySideTokenTest = await ethers.getContractFactory("SideTokenTest");
 
     const sideTokenTest = await factorySideTokenTest.deploy();
@@ -267,7 +267,7 @@ describe("Swap RBTC", function () {
     await expect(swapRBTC.tokensReceived(genericAddress, sender.address, deployer.address, 0, 0, 0)).to.be.revertedWith("SwapRBTC: Invalid 'to' address");
   });
 
-  it('Should validate if the sender address is already included in the list on token received method', async function () {
-    await expect(swapRBTC.tokensReceived(deployer.address, sender.address, swapRBTC.address, 0, 0, 0)).to.be.revertedWith("SwapRBTC: Side Token not found");
+  it('Should validate if the address is already included in the list on token received method', async function () {
+    await expect(swapRBTC.tokensReceived(deployer.address, genericAddress, swapRBTC.address, 0, 0, 0)).to.be.revertedWith("SwapRBTC: Side Token not found");
   });
 });
