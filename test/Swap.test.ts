@@ -119,7 +119,7 @@ describe("Swap RBTC", function () {
     await expect(swapRBTC.withdrawalRBTC(halfEther.add(quarterEther))).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
-  it("Should fallback when try to withdraw RBTC", async function() {
+  it("Should fail if fallback fails when trying to withdraw RBTC", async function() {
     const factoryFallbackRBTC = await ethers.getContractFactory("FallbackRBTC");
 
     fallbackRBTC = await factoryFallbackRBTC.deploy(swapRBTC.address);
