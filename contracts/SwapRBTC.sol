@@ -18,7 +18,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   event sideTokenBtcRemoved(address sideTokenBtc);
   event RbtcSwapRbtc(address sideTokenBtc, uint256 amountSwapped);
   event WithdrawalRBTC(address indexed src, uint256 wad);
-  event WithdrawalWRBTC(address indexed src, uint256 wad);
+  event WithdrawalSideTokenBtc(address indexed src, uint256 wad);
   event Deposit(address sender, uint256 amount, address tokenAddress);
   
   IERC1820Registry constant internal ERC1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
@@ -63,7 +63,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   }
 
 // TODO: Rename to withdrawSideToken
-  function withdrawalWRBTC(uint256 amount, address sideTokenBtcContract) external {
+  function withdrawalSideTokenBtc(uint256 amount, address sideTokenBtcContract) external {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
     require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
 
@@ -71,8 +71,8 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     require(sideTokenBtc.balanceOf(address(this)) >= amount, "SwapRBTC: amount > balance");
     balance[msg.sender] -= amount;
     bool successCall = sideTokenBtc.transferFrom(address(this), msg.sender, amount);
-    require(successCall, "SwapRBTC: withdrawalWRBTC failed");
-    emit WithdrawalWRBTC(msg.sender, amount);
+    require(successCall, "SwapRBTC: withdrawalSideTokenBtc failed");
+    emit WithdrawalSideTokenBtc(msg.sender, amount);
   }
 
   function _addSideTokenBtc(address sideTokenBtcContract) internal {
@@ -109,7 +109,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     return enumerableSideTokenBtc.at(index);
   }
 
-  function swapWRBTCtoRBTC(uint256 amount, address sideTokenBtcContract) external override returns (uint256) {
+  function swapSideTokenBtctoRBTC(uint256 amount, address sideTokenBtcContract) external override returns (uint256) {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
     ISideToken sideTokenBtc = ISideToken(sideTokenBtcContract);
 
@@ -125,6 +125,25 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     (bool successCall,) = sender.call{value: amount}("");
     require(successCall, "SwapRBTC: Swap call failed");
     emit RbtcSwapRbtc(address(sideTokenBtc), amount);
+    return amount;
+  }
+
+  function swapRBTCtoSideTokenBtc(uint256 amount, address rBTCContract) external override returns (uint256) {
+    require(enumerableSideTokenBtc.contains(rBTCContract), "SwapRBTC: Side Token not found");
+    ISideToken rbtc = ISideToken(rBTCContract);
+
+    address payable sender = payable(msg.sender);
+    require(rbtc.balanceOf(sender) >= amount, "SwapRBTC: not enough balance");
+
+    bool successTransfer = rbtc.transferFrom(sender, address(this), amount);
+
+    require(successTransfer, "SwapRBTC: Transfer sender failed");
+    require(address(this).balance >= amount, "SwapRBTC: amount > balance");
+
+    // solhint-disable-next-line avoid-low-level-calls
+    (bool successCall,) = sender.call{value: amount}("");
+    require(successCall, "SwapRBTC: Swap call failed");
+    emit RbtcSwapRbtc(address(rbtc), amount);
     return amount;
   }
 
