@@ -62,7 +62,6 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     emit WithdrawalRBTC(msg.sender, amount);
   }
 
-// TODO: Rename to withdrawSideToken
   function withdrawalSideTokenBtc(uint256 amount, address sideTokenBtcContract) external {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
     require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
@@ -128,9 +127,9 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     return amount;
   }
 
-  function swapRBTCtoSideTokenBtc(uint256 amount, address rBTCContract) external override returns (uint256) {
-    require(enumerableSideTokenBtc.contains(rBTCContract), "SwapRBTC: Side Token not found");
-    ISideToken rbtc = ISideToken(rBTCContract);
+  function swapRBTCtoSideTokenBtc(uint256 amount, address sideTokenBtcContract) external payable override returns (uint256) {
+    require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
+    ISideToken rbtc = ISideToken(sideTokenBtcContract);
 
     address payable sender = payable(msg.sender);
     require(rbtc.balanceOf(sender) >= amount, "SwapRBTC: not enough balance");
