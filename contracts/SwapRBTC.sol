@@ -17,6 +17,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   event sideTokenBtcAdded(address sideTokenBtc);
   event sideTokenBtcRemoved(address sideTokenBtc);
   event RbtcSwapRbtc(address sideTokenBtc, uint256 amountSwapped);
+  event RbtcSwapSideToken(address sideTokenBtc, uint256 amountSwapped);
   event WithdrawalRBTC(address indexed src, uint256 wad);
   event WithdrawalSideTokenBtc(address indexed src, uint256 wad);
   event Deposit(address sender, uint256 amount, address tokenAddress);
@@ -129,20 +130,19 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
 
   function swapRBTCtoSideTokenBtc(uint256 amount, address sideTokenBtcContract) external payable override returns (uint256) {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
-    ISideToken rbtc = ISideToken(sideTokenBtcContract);
+    ISideToken sideToken = ISideToken(sideTokenBtcContract);
 
-    address payable sender = payable(msg.sender);
-    require(rbtc.balanceOf(sender) >= amount, "SwapRBTC: not enough balance");
+    require(sideToken.balanceOf(address(this)) >= amount, "SwapRBTC: not enough balance");
 
-    bool successTransfer = rbtc.transferFrom(sender, address(this), amount);
+    bool successTransfer = sideToken.transferFrom(address(this), msg.sender, amount);
 
     require(successTransfer, "SwapRBTC: Transfer sender failed");
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
 
     // solhint-disable-next-line avoid-low-level-calls
-    (bool successCall,) = sender.call{value: amount}("");
+    (bool successCall,) = address(this).call{value: amount}("");
     require(successCall, "SwapRBTC: Swap call failed");
-    emit RbtcSwapRbtc(address(rbtc), amount);
+    emit RbtcSwapSideToken(address(sideToken), amount);
     return amount;
   }
 
