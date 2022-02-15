@@ -131,17 +131,15 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   function swapRBTCtoSideTokenBtc(uint256 amount, address sideTokenBtcContract) external payable override returns (uint256) {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
     ISideToken sideToken = ISideToken(sideTokenBtcContract);
+    require(address(this).balance >= amount, "SwapRBTC: amount > balance");
 
     require(sideToken.balanceOf(address(this)) >= amount, "SwapRBTC: not enough balance");
 
     bool successTransfer = sideToken.transferFrom(address(this), msg.sender, amount);
 
     require(successTransfer, "SwapRBTC: Transfer sender failed");
-    require(address(this).balance >= amount, "SwapRBTC: amount > balance");
+    balance[msg.sender] -= amount;
 
-    // solhint-disable-next-line avoid-low-level-calls
-    (bool successCall,) = address(this).call{value: amount}("");
-    require(successCall, "SwapRBTC: Swap call failed");
     emit RbtcSwapSideToken(address(sideToken), amount);
     return amount;
   }
