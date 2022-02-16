@@ -5,6 +5,7 @@ import "./ISideToken.sol";
 import "./ISwapRBTC.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -131,14 +132,16 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
   function swapRBTCtoSideTokenBtc(uint256 amount, address sideTokenBtcContract) external payable override returns (uint256) {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
     ISideToken sideToken = ISideToken(sideTokenBtcContract);
+    address sender = _msgSender();
+    
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
-
     require(sideToken.balanceOf(address(this)) >= amount, "SwapRBTC: not enough balance");
+    require(balance[msg.sender] >= amount, "SwapRBTC: sender not enough balance");
 
-    bool successTransfer = sideToken.transferFrom(address(this), msg.sender, amount);
+    bool successTransfer = IERC20(sideTokenBtcContract).transfer(sender, amount);
 
     require(successTransfer, "SwapRBTC: Transfer sender failed");
-    balance[msg.sender] -= amount;
+    balance[sender] -= amount;
 
     emit RbtcSwapSideToken(address(sideToken), amount);
     return amount;
