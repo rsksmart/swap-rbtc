@@ -32,43 +32,113 @@ describe("Swap RBTC", function () {
     await swapRBTC.initialize(sideTokenBtc.address);
   });
 
-  it("Should Swap the side token BTC to RBTC", async function () {
-    await sideTokenBtc.connect(minter).mint(sender.address, oneEther, "0x", "0x");
-    const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
-
-    expect(senderBalance.toString()).to.equals(oneEther.toString());
-
-    await deployer.sendTransaction({
-      to: swapRBTC.address,
-      value: oneEther
+  describe('Swap side token to RBTC', async function () {
+    it("Should Swap the side token BTC to RBTC", async function () {
+      await sideTokenBtc.connect(minter).mint(sender.address, oneEther, "0x", "0x");
+      const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
+  
+      expect(senderBalance.toString()).to.equals(oneEther.toString());
+  
+      await deployer.sendTransaction({
+        to: swapRBTC.address,
+        value: oneEther
+      });
+  
+      await sideTokenBtc.connect(sender).approve(swapRBTC.address, halfEther);
+      const balanceBeforeSwap = await sender.getBalance();
+      const response = await swapRBTC.connect(sender).swapSideTokenBtctoRBTC(halfEther, sideTokenBtc.address);
+      const receipt = await response.wait();
+  
+      const balanceAfterSwap = await sender.getBalance();
+      const effectiveGasPrice = BigNumber.from(receipt.effectiveGasPrice);
+      const gasUsed = BigNumber.from(receipt.gasUsed);
+      const spentInGas = effectiveGasPrice.mul(gasUsed);
+      expect(balanceAfterSwap).to.be.equal(balanceBeforeSwap.sub(spentInGas).add(halfEther))
     });
-
-    await sideTokenBtc.connect(sender).approve(swapRBTC.address, halfEther);
-    const balanceBeforeSwap = await sender.getBalance();
-    const response = await swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEther, sideTokenBtc.address);
-    const receipt = await response.wait();
-
-    const balanceAfterSwap = await sender.getBalance();
-    const effectiveGasPrice = BigNumber.from(receipt.effectiveGasPrice);
-    const gasUsed = BigNumber.from(receipt.gasUsed);
-    const spentInGas = effectiveGasPrice.mul(gasUsed);
-    expect(balanceAfterSwap).to.be.equal(balanceBeforeSwap.sub(spentInGas).add(halfEther))
+  
+    it("Should Revert swap when transfer amount exceeds allowance", async function () {
+      await sideTokenBtc.connect(minter).mint(sender.address, halfEther, "0x", "0x");
+      const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
+  
+      expect(senderBalance.toString()).to.equals(halfEther.toString());
+      await sideTokenBtc.connect(sender).approve(swapRBTC.address, quarterEther);
+  
+      await deployer.sendTransaction({
+        to: swapRBTC.address,
+        value: oneEther
+      });
+  
+      await expect(swapRBTC.connect(sender).swapSideTokenBtctoRBTC(halfEther, sideTokenBtc.address))
+        .to.be.revertedWith("ERC777: transfer amount exceeds allowance");
+    });
   });
 
-  it("Should Revert swap when transfer amount exceeds allowance", async function () {
-    await sideTokenBtc.connect(minter).mint(sender.address, halfEther, "0x", "0x");
-    const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
+  describe('Swap RBTC to side token', async function () {
+    it("Should Swap the side token BTC to RBTC", async function () {
+      await sideTokenBtc.connect(minter).mint(swapRBTC.address, oneEther, "0x", "0x");
+      await sideTokenBtc.connect(minter).mint(sender.address, oneEther, "0x", "0x");
+      const swapRBTCBalance: BigNumber = await sideTokenBtc.balanceOf(swapRBTC.address);
+      const senderBalance: BigNumber = await sideTokenBtc.balanceOf(sender.address);
 
-    expect(senderBalance.toString()).to.equals(halfEther.toString());
-    await sideTokenBtc.connect(sender).approve(swapRBTC.address, quarterEther);
+      expect(swapRBTCBalance.toString()).to.equals(oneEther.toString());
+      expect(senderBalance.toString()).to.equals(oneEther.toString());
+  
+      await sender.sendTransaction({
+        to: swapRBTC.address,
+        value: oneEther
+      });
 
-    await deployer.sendTransaction({
-      to: swapRBTC.address,
-      value: oneEther
+      const senderSideTokenBalanceBefore = await sideTokenBtc.balanceOf(sender.address);
+      const senderRbtBalanceBefore = await swapRBTC.balance(sender.address);
+
+      expect(senderSideTokenBalanceBefore.toString()).to.equals(oneEther.toString());
+      expect(senderRbtBalanceBefore.toString()).to.equals(oneEther.toString());
+
+      const revertSwap = await swapRBTC.connect(sender).swapRBTCtoSideTokenBtc(quarterEther, sideTokenBtc.address);
+      await revertSwap.wait();
+
+      const senderSideTokenBalanceAfter = await sideTokenBtc.balanceOf(sender.address);
+      const senderRbtBalanceAfter = await swapRBTC.balance(sender.address);
+      
+      expect(senderSideTokenBalanceAfter.toString()).to.equals(oneEther.add(quarterEther).toString());
+      expect(senderRbtBalanceAfter.toString()).to.equals(oneEther.sub(quarterEther).toString());
+    });
+  
+    it("Should validate if the side token is included", async function () {
+      await expect(swapRBTC.connect(sender).swapRBTCtoSideTokenBtc(halfEther, deployer.address))
+        .to.be.revertedWith("SwapRBTC: Side Token not found");
     });
 
-    await expect(swapRBTC.connect(sender).swapWRBTCtoRBTC(halfEther, sideTokenBtc.address))
-      .to.be.revertedWith("ERC777: transfer amount exceeds allowance");
+    it("Should validate if the contract has balance", async function () {
+      await expect(swapRBTC.connect(sender).swapRBTCtoSideTokenBtc(halfEther, sideTokenBtc.address))
+      .to.be.revertedWith("SwapRBTC: amount > balance");
+    });
+
+    it("Should validate if the side token has rbtc balance", async function () {
+      await sideTokenBtc.connect(minter).mint(swapRBTC.address, halfEther, "0x", "0x");
+      const senderBalance: BigNumber = await sideTokenBtc.balanceOf(swapRBTC.address);
+  
+      expect(senderBalance.toString()).to.equals(halfEther.toString());
+
+      await expect(swapRBTC.connect(sender).swapSideTokenBtctoRBTC(oneEther, sideTokenBtc.address))
+      .to.be.revertedWith("SwapRBTC: not enough balance");
+    });
+
+    it("Should validate if the sender has balance", async function () {
+      await sideTokenBtc.connect(minter).mint(sender.address, quarterEther, "0x", "0x");
+      await sideTokenBtc.connect(minter).mint(swapRBTC.address, oneEther.add(quarterEther), "0x", "0x");
+      await sender.sendTransaction({
+        to: swapRBTC.address,
+        value: quarterEther
+      });
+      await deployer.sendTransaction({
+        to: swapRBTC.address,
+        value: oneEther
+      });
+
+      await expect(swapRBTC.connect(sender).swapRBTCtoSideTokenBtc(halfEther, sideTokenBtc.address))
+      .to.be.revertedWith("SwapRBTC: sender not enough balance");
+    });
   });
 
   it("Should be allowed to withdraw RBTC", async function() {
@@ -129,11 +199,11 @@ describe("Swap RBTC", function () {
     expect(fallbackRBTC.withdraw(halfEther)).to.be.revertedWith("SwapRBTC: withdrawalRBTC failed");
   });
 
-  it("Should Not be allowed to withdraw WRBTC When balance is not enough", async function () {
-    await expect(swapRBTC.connect(sender).withdrawalWRBTC(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
+  it("Should Not be allowed to withdraw SideTokenBtc When balance is not enough", async function () {
+    await expect(swapRBTC.connect(sender).withdrawalSideTokenBtc(halfEther, sideTokenBtc.address)).to.be.revertedWith("SwapRBTC: amount > senderBalance");
   });
 
-  it("Should Not be allowed to withdraw WRBTC When the transfer from failed", async function () {
+  it("Should Not be allowed to withdraw SideTokenBtc When the transfer from failed", async function () {
     const factorySideTokenTest = await ethers.getContractFactory("SideTokenTest");
 
     const sideTokenTest = await factorySideTokenTest.deploy();
@@ -148,7 +218,7 @@ describe("Swap RBTC", function () {
     });
     await receipt.wait();
 
-    await expect(swapRBTC.connect(sender).withdrawalWRBTC(quarterEther, sideTokenTest.address)).to.be.revertedWith("SwapRBTC: withdrawalWRBTC failed");
+    await expect(swapRBTC.connect(sender).withdrawalSideTokenBtc(quarterEther, sideTokenTest.address)).to.be.revertedWith("SwapRBTC: withdrawalSideTokenBtc failed");
   });
 
   it("Should add side token address", async function () {
