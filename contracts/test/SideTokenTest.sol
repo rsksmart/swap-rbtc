@@ -13,6 +13,13 @@ contract SideTokenTest is IERC777 {
         return false;
     }
 
+    function transfer(
+        address,
+        uint256
+    ) public virtual returns (bool) {
+        return false;
+    }
+
     function authorizeOperator(address) external {
 
     }

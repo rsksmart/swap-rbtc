@@ -43,7 +43,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
 
   receive() external payable {
 		// The fallback function is needed to receive RBTC
-    _deposit(msg.sender, msg.value, address(0));
+    _deposit(_msgSender(), msg.value, address(0));
 	}
 
   function _deposit(address from, uint256 amount, address tokenAddress) internal {
@@ -53,27 +53,27 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
 
   function withdrawalRBTC(uint256 amount) external {
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
-    require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
+    require(balance[_msgSender()] >= amount, "SwapRBTC: amount > senderBalance");
     
-    balance[msg.sender] -= amount;
+    balance[_msgSender()] -= amount;
 
     // solhint-disable-next-line avoid-low-level-calls
-    (bool successCall,) = payable(msg.sender).call{value: amount}("");
+    (bool successCall,) = payable(_msgSender()).call{value: amount}("");
     require(successCall, "SwapRBTC: withdrawalRBTC failed");
 
-    emit WithdrawalRBTC(msg.sender, amount);
+    emit WithdrawalRBTC(_msgSender(), amount);
   }
 
   function withdrawalSideTokenBtc(uint256 amount, address sideTokenBtcContract) external {
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
-    require(balance[msg.sender] >= amount, "SwapRBTC: amount > senderBalance");
+    require(balance[_msgSender()] >= amount, "SwapRBTC: amount > senderBalance");
 
     ISideToken sideTokenBtc = ISideToken(sideTokenBtcContract);
     require(sideTokenBtc.balanceOf(address(this)) >= amount, "SwapRBTC: amount > balance");
-    balance[msg.sender] -= amount;
-    bool successCall = sideTokenBtc.transferFrom(address(this), msg.sender, amount);
+    balance[_msgSender()] -= amount;
+    bool successCall = IERC20(sideTokenBtcContract).transfer(_msgSender(), amount);
     require(successCall, "SwapRBTC: withdrawalSideTokenBtc failed");
-    emit WithdrawalSideTokenBtc(msg.sender, amount);
+    emit WithdrawalSideTokenBtc(_msgSender(), amount);
   }
 
   function _addSideTokenBtc(address sideTokenBtcContract) internal {
@@ -114,7 +114,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: Side Token not found");
     ISideToken sideTokenBtc = ISideToken(sideTokenBtcContract);
 
-    address payable sender = payable(msg.sender);
+    address payable sender = payable(_msgSender());
     require(sideTokenBtc.balanceOf(sender) >= amount, "SwapRBTC: not enough balance");
 
     bool successTransfer = sideTokenBtc.transferFrom(sender, address(this), amount);
@@ -136,12 +136,12 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     
     require(address(this).balance >= amount, "SwapRBTC: amount > balance");
     require(sideToken.balanceOf(address(this)) >= amount, "SwapRBTC: not enough balance");
-    require(balance[msg.sender] >= amount, "SwapRBTC: sender not enough balance");
+    require(balance[sender] >= amount, "SwapRBTC: sender not enough balance");
 
+    balance[sender] -= amount;
     bool successTransfer = IERC20(sideTokenBtcContract).transfer(sender, amount);
 
     require(successTransfer, "SwapRBTC: Transfer sender failed");
-    balance[sender] -= amount;
 
     emit RbtcSwapSideToken(address(sideToken), amount);
     return amount;

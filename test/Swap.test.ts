@@ -149,8 +149,12 @@ describe("Swap RBTC", function () {
       value: depositedAmount
     });
     await receipt.wait();
+    let senderBalance = await swapRBTC.balance(sender.address);
+    expect(senderBalance).to.be.equal(depositedAmount);
 
     await expect(swapRBTC.connect(sender).withdrawalRBTC(quarterEther)).to.emit(swapRBTC, 'WithdrawalRBTC');
+    senderBalance = await swapRBTC.balance(sender.address);
+    expect(senderBalance).to.be.equal(depositedAmount.sub(quarterEther));
   });
 
   it("Should Not be allowed to withdraw RBTC When contract balance is not enough", async function () {
@@ -197,6 +201,29 @@ describe("Swap RBTC", function () {
     fallbackRBTC.deposit({ value: halfEther });
 
     expect(fallbackRBTC.withdraw(halfEther)).to.be.revertedWith("SwapRBTC: withdrawalRBTC failed");
+  });
+
+  it("Should withdraw SideTokenBtc", async function () {
+    await sideTokenBtc.connect(minter).mint(sender.address, oneEther, "0x", "0x");
+    await sideTokenBtc.connect(minter).mint(swapRBTC.address, oneEther, "0x", "0x");
+    const depositedAmount = oneEther;
+
+    const receipt = await sender.sendTransaction({
+      to: swapRBTC.address,
+      value: depositedAmount
+    });
+
+    let swapRBTCBalance = await ethers.provider.getBalance(swapRBTC.address);
+    let senderBalance = await swapRBTC.balance(sender.address);
+    expect(swapRBTCBalance).to.be.equal(depositedAmount);
+    expect(senderBalance).to.be.equal(depositedAmount);
+
+    await swapRBTC.connect(sender).withdrawalSideTokenBtc(quarterEther, sideTokenBtc.address);
+
+    swapRBTCBalance = await ethers.provider.getBalance(swapRBTC.address);
+    senderBalance = await swapRBTC.balance(sender.address);
+    expect(swapRBTCBalance).to.be.equal(depositedAmount);
+    expect(senderBalance).to.be.equal(depositedAmount.sub(quarterEther));
   });
 
   it("Should Not be allowed to withdraw SideTokenBtc When balance is not enough", async function () {
