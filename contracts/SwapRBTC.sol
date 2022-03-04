@@ -70,6 +70,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
 
     ISideToken sideTokenBtc = ISideToken(sideTokenBtcContract);
     require(sideTokenBtc.balanceOf(address(this)) >= amount, "SwapRBTC: amount > balance");
+
     balance[_msgSender()] -= amount;
     bool successCall = IERC20(sideTokenBtcContract).transfer(_msgSender(), amount);
     require(successCall, "SwapRBTC: withdrawalSideTokenBtc failed");
