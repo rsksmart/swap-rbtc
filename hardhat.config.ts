@@ -38,7 +38,7 @@ const config: HardhatUserConfig = {
     // RSK
     rsktestnet: {
       live: true,
-      url: 'https://public-node.testnet.rsk.co',
+      url: 'http://rskj-01.aws-us-west-2.dev.tokenbridge.rifcomputing.net:4444',
       blockGasLimit: 6800000,
       gasPrice: 68000000, // 0.06 gwei
       chainId: RSK_TEST_NET_CHAIN_ID,
@@ -55,6 +55,8 @@ const config: HardhatUserConfig = {
     multiSig: getMultiSigAddressesByChainId(),
     proxyAdmin: getProxyAdminAddressesByChainId(),
     sideToken: getSideWbtcAddressesByChainId(),
+    kovanSideToken: getKovanWbtcAddressesToUseByChainId(),
+    binanceSideToken: getBinanceWbtcAddressesToUseByChainId()
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -64,8 +66,6 @@ const config: HardhatUserConfig = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
-
-
 
 function getMultiSigAddressesByChainId() {
   const multiSigAddressesByChainId: {
@@ -91,6 +91,27 @@ function getSideWbtcAddressesByChainId() {
   } = {};
   sideWbtcAddressesByChainId[RSK_TEST_NET_CHAIN_ID] = '0xb94e4a2ab8057d55a5764861ea1e3104614ce944';
   return sideWbtcAddressesByChainId;
+}
+
+function getKovanWbtcAddressesToUseByChainId() {
+  const sideTokensByChainId: {
+    [index: number]: string
+  } = {};
+  sideTokensByChainId[RSK_TEST_NET_CHAIN_ID] = '0xb8aE2CB769255359190fBcE89d3aD38687da5e65'.toLowerCase();
+  // TODO: Complete when deploying to mainnet
+  //sideTokensByChainId[RSK_MAIN_NET_CHAIN_ID] = '' 
+  return sideTokensByChainId;
+}
+
+function getBinanceWbtcAddressesToUseByChainId() {
+  const sideTokensByChainId: {
+    [index: number]: string
+  } = {};
+  // TODO: Add the binance WBTC token
+  // sideTokensByChainId[RSK_TEST_NET_CHAIN_ID] = '';
+  // TODO: Complete when deploying to mainnet 
+  // sideTokensByChainId[RSK_MAIN_NET_CHAIN_ID] = '' 
+  return sideTokensByChainId;
 }
 
 export default config;
