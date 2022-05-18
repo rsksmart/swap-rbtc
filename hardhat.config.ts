@@ -55,8 +55,7 @@ const config: HardhatUserConfig = {
     multiSig: getMultiSigAddressesByChainId(),
     proxyAdmin: getProxyAdminAddressesByChainId(),
     sideToken: getSideWbtcAddressesByChainId(),
-    kovanSideToken: getKovanWbtcAddressesToUseByChainId(),
-    binanceSideToken: getBinanceWbtcAddressesToUseByChainId()
+    anyswapWbtcSideToken: getAnyswapWbtcSideToken(),
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -93,24 +92,13 @@ function getSideWbtcAddressesByChainId() {
   return sideWbtcAddressesByChainId;
 }
 
-function getKovanWbtcAddressesToUseByChainId() {
+function getAnyswapWbtcSideToken() {
   const sideTokensByChainId: {
     [index: number]: string
   } = {};
-  sideTokensByChainId[RSK_TEST_NET_CHAIN_ID] = '0xb8aE2CB769255359190fBcE89d3aD38687da5e65'.toLowerCase();
+  sideTokensByChainId[RSK_TEST_NET_CHAIN_ID] = '0xa7260287Ab1845CA27A921AaE0048090AADB5F75'.toLowerCase();
   // TODO: Complete when deploying to mainnet
-  //sideTokensByChainId[RSK_MAIN_NET_CHAIN_ID] = '' 
-  return sideTokensByChainId;
-}
-
-function getBinanceWbtcAddressesToUseByChainId() {
-  const sideTokensByChainId: {
-    [index: number]: string
-  } = {};
-  // TODO: Add the binance WBTC token
-  // sideTokensByChainId[RSK_TEST_NET_CHAIN_ID] = '';
-  // TODO: Complete when deploying to mainnet 
-  // sideTokensByChainId[RSK_MAIN_NET_CHAIN_ID] = '' 
+  //sideTokensByChainId[RSK_MAIN_NET_CHAIN_ID] = ''
   return sideTokensByChainId;
 }
 
