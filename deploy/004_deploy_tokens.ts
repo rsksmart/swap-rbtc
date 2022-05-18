@@ -5,7 +5,7 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) { // HardhatRun
   const { deployments, network, getNamedAccounts } = hre;
   const { log } = deployments;
   const [deployer] = await ethers.getSigners();
-  const { kovanSideToken, binanceSideToken } = await getNamedAccounts();
+  const { anyswapWbtcSideToken } = await getNamedAccounts();
 
   const SwapRBTC = await deployments.get('SwapRBTC');
   const SwapRrbtcProxy = await deployments.get('SwapRbtcProxy');
@@ -15,12 +15,8 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) { // HardhatRun
     return;
   }
 
-  if (kovanSideToken) {
-    await tryAddTrustedToken(kovanSideToken, 'kovan', swapContract, log);
-  }
-
-  if (binanceSideToken) {
-    await tryAddTrustedToken(binanceSideToken, 'binance', swapContract, log);
+  if (anyswapWbtcSideToken) {
+    await tryAddTrustedToken(anyswapWbtcSideToken, 'rsk', swapContract, log);
   }
 };
 
@@ -30,12 +26,13 @@ async function tryAddTrustedToken(sideToken: string, networkName: string, swapCo
     log('Token with address:', sideToken, 'for network:', networkName, 'already in contract.')
   }
   else {
-    await swapContract.addSideTokenBtc(sideToken);
+    const res = await swapContract.callStatic.addSideTokenBtc(sideToken);
     if (await swapContract.containsSideTokenBtc(sideToken)) {
       log('Added token with address:', sideToken, 'for network:', networkName)
     }
     else {
       log('Could not add the token with address:', sideToken, 'network:', networkName)
+      log('response: ', res)
     }
   }
 }
