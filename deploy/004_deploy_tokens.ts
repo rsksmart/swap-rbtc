@@ -26,7 +26,7 @@ async function tryAddTrustedToken(sideToken: string, networkName: string, swapCo
     log('Token with address:', sideToken, 'for network:', networkName, 'already in contract.')
   }
   else {
-    const res = await swapContract.callStatic.addSideTokenBtc(sideToken);
+    const res = await swapContract.addSideTokenBtc(sideToken);
     if (await swapContract.containsSideTokenBtc(sideToken)) {
       log('Added token with address:', sideToken, 'for network:', networkName)
     }
