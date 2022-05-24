@@ -21,14 +21,14 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) { // HardhatRun
 };
 
 async function tryAddTrustedToken(sideToken: string, networkName: string, swapContract: any, log: any, deployer: any) {
-  const containsSideToken = await swapContract.connect(deployer).callStatic.containsSideTokenBtc(sideToken);
+  const containsSideToken = await swapContract.connect(deployer).containsSideTokenBtc(sideToken);
 
   if (containsSideToken) {
     log('Token with address:', sideToken, 'for network:', networkName, 'already in contract.')
   }
   else {
     const res = await swapContract.connect(deployer).addSideTokenBtc(sideToken);
-    if (await swapContract.callStatic.containsSideTokenBtc(sideToken)) {
+    if (await swapContract.containsSideTokenBtc(sideToken)) {
       log('Added token with address:', sideToken, 'for network:', networkName)
     }
     else {
