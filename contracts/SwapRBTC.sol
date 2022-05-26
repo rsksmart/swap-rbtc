@@ -88,6 +88,7 @@ contract SwapRBTC is Initializable, OwnableUpgradeable, ISwapRBTC, IERC777Recipi
     _addSideTokenBtc(sideTokenBtcContract);
   }
 
+
   function _removeSideTokenBtc(address sideTokenBtcContract) internal {
     require(sideTokenBtcContract != NULL_ADDRESS, "SwapRBTC: sideBTC is null");
     require(enumerableSideTokenBtc.contains(sideTokenBtcContract), "SwapRBTC: side token not founded");
